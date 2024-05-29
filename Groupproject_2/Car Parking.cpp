@@ -81,24 +81,30 @@ int main() {
 }
 
 void initializeSystem() {
-    // Set admin password
-    cout << "Please set the admin password: ";
-    cin >> adminPassword;
-
-    // Initialize parking types and vehicle types
-    parkingTypeToVehicleTypes["Compact"] = { "Car", "Van" };
-    parkingTypeToVehicleTypes["Handicapped"] = { "Truck", "Otto" };
-    parkingTypeToVehicleTypes["Motorcycle"] = { "Motorcycle" };
-
-    // Initialize hourly rates
-    hourlyRates["Compact"]["Car"] = 2.0;
-    hourlyRates["Compact"]["Van"] = 2.5;
-    hourlyRates["Handicapped"]["Truck"] = 3.0;
-    hourlyRates["Handicapped"]["Otto"] = 3.5;
-    hourlyRates["Motorcycle"]["Motorcycle"] = 1.5;
-
-    // Load parking lot data from file
+    // Load data from file
     loadData();
+
+    // Set admin password if not loaded
+    if (adminPassword.empty()) {
+        cout << "Please set the admin password: ";
+        cin >> adminPassword;
+    }
+
+    // Initialize parking types and vehicle types if not loaded
+    if (parkingTypeToVehicleTypes.empty()) {
+        parkingTypeToVehicleTypes["Compact"] = { "Car", "Van" };
+        parkingTypeToVehicleTypes["Handicapped"] = { "Truck", "Otto" };
+        parkingTypeToVehicleTypes["Motorcycle"] = { "Motorcycle" };
+    }
+
+    // Initialize hourly rates if not loaded
+    if (hourlyRates.empty()) {
+        hourlyRates["Compact"]["Car"] = 2.0;
+        hourlyRates["Compact"]["Van"] = 2.5;
+        hourlyRates["Handicapped"]["Truck"] = 3.0;
+        hourlyRates["Handicapped"]["Otto"] = 3.5;
+        hourlyRates["Motorcycle"]["Motorcycle"] = 1.5;
+    }
 }
 
 void adminLogin() {
@@ -484,7 +490,11 @@ void modifyParkingTypeVehicleTypes() {
 }
 
 void saveData() {
-    ofstream outFile("parkingLots.dat");
+    ofstream outFile("adminPassword.dat");
+    outFile << adminPassword;
+    outFile.close();
+
+    outFile.open("parkingLots.dat");
     for (const auto& floor : parkingLots) {
         outFile << floor.first << "\n";
         for (const auto& spot : floor.second) {
@@ -519,7 +529,13 @@ void saveData() {
 }
 
 void loadData() {
-    ifstream inFile("parkingLots.dat");
+    ifstream inFile("adminPassword.dat");
+    if (inFile) {
+        inFile >> adminPassword;
+        inFile.close();
+    }
+
+    inFile.open("parkingLots.dat");
     if (inFile) {
         string floor, id, type, vehicleType, plateNumber;
         bool isOccupied;
@@ -589,9 +605,10 @@ void displayVisualParkingStatus(const string& floor) {
     cout << "Floor: " << floor << "\n";
     const auto& spots = parkingLots[floor];
     for (size_t i = 0; i < spots.size(); ++i) {
-        if (i % 10 == 0) cout << "\n";
+        if (i % 10 == 0) cout << "\n"; // 每10个车位换一行
         const auto& spot = spots[i];
-        cout << (spot.isOccupied ? "[X]" : "[ ]") << spot.id << " ";
+        string spotStatus = spot.isOccupied ? "[X]" : "[ ]";
+        cout << spotStatus << spot.id << "(" << spot.type << ") ";
     }
     cout << "\n";
 }
