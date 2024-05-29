@@ -4,6 +4,7 @@
 #include <vector>
 #include <ctime>
 #include <map>
+#include <set>
 
 using namespace std;
 
@@ -31,8 +32,9 @@ struct Customer {
 // Global variables
 map<string, vector<ParkingSpot>> parkingLots;
 map<string, Customer> customers;
+map<string, set<string>> parkingTypeToVehicleTypes;
+map<string, map<string, double>> hourlyRates; // Nested map for parkingType -> vehicleType -> rate
 string adminPassword;
-double hourlyRates[3] = { 2.0, 3.0, 1.5 }; // Compact, Handicapped, Motorcycle
 double dailyMaxRate = 50.0;
 
 // Function declarations
@@ -50,6 +52,7 @@ void rentParkingSpot();
 void settleParkingFee();
 void saveData();
 void loadData();
+void modifyParkingTypeVehicleTypes();
 
 int main() {
     initializeSystem();
@@ -75,6 +78,18 @@ void initializeSystem() {
     cout << "Please set the admin password: ";
     cin >> adminPassword;
 
+    // Initialize parking types and vehicle types
+    parkingTypeToVehicleTypes["Compact"] = { "Car", "Van" };
+    parkingTypeToVehicleTypes["Handicapped"] = { "Truck", "Otto" };
+    parkingTypeToVehicleTypes["Motorcycle"] = { "Motorcycle" };
+
+    // Initialize hourly rates
+    hourlyRates["Compact"]["Car"] = 2.0;
+    hourlyRates["Compact"]["Van"] = 2.5;
+    hourlyRates["Handicapped"]["Truck"] = 3.0;
+    hourlyRates["Handicapped"]["Otto"] = 3.5;
+    hourlyRates["Motorcycle"]["Motorcycle"] = 1.5;
+
     // Load parking lot data from file
     loadData();
 }
@@ -93,7 +108,8 @@ void adminLogin() {
             cout << "4. Delete Parking Spot\n";
             cout << "5. Set Hourly Rates\n";
             cout << "6. Set Daily Max Rate\n";
-            cout << "7. Search Available Spots\n";
+            cout << "7. Modify Parking Types and Vehicle Types\n";
+            cout << "8. Search Available Spots\n";
             cout << "0. Exit\n";
             cout << "Please choose: ";
             cin >> choice;
@@ -104,7 +120,8 @@ void adminLogin() {
             case 4: deleteParkingSpot(); break;
             case 5: setHourlyRate(); break;
             case 6: setDailyMaxRate(); break;
-            case 7: searchAvailableSpots(); break;
+            case 7: modifyParkingTypeVehicleTypes(); break;
+            case 8: searchAvailableSpots(); break;
             }
         } while (choice != 0);
     }
@@ -145,8 +162,9 @@ void customerLogin() {
 void displayParkingStatus() {
     for (const auto& floor : parkingLots) {
         cout << "Floor: " << floor.first << "\n";
-        for (const auto& spot : floor.second) {
-            cout << "Type: " << spot.type << ", Occupied: " << (spot.isOccupied ? "Yes" : "No") << "\n";
+        for (size_t i = 0; i < floor.second.size(); ++i) {
+            const auto& spot = floor.second[i];
+            cout << "Index: " << i << ", Type: " << spot.type << ", Occupied: " << (spot.isOccupied ? "Yes" : "No") << "\n";
         }
     }
 }
@@ -166,7 +184,7 @@ void addParkingSpot() {
 }
 
 void modifyParkingSpot() {
-    string floor, type, newType;
+    string floor, type, newType, newVehicleType;
     int index;
     cout << "Enter floor (e.g., B1, B2): ";
     cin >> floor;
@@ -174,13 +192,26 @@ void modifyParkingSpot() {
     cin >> index;
 
     if (parkingLots.find(floor) != parkingLots.end() && index >= 0 && index < parkingLots[floor].size()) {
-        cout << "Current Type: " << parkingLots[floor][index].type << ", Is Occupied: " << (parkingLots[floor][index].isOccupied ? "Yes" : "No") << "\n";
+        auto& spot = parkingLots[floor][index];
+        cout << "Current Type: " << spot.type << ", Is Occupied: " << (spot.isOccupied ? "Yes" : "No") << "\n";
         cout << "Enter new type (Compact, Handicapped, Motorcycle): ";
         cin >> newType;
 
-        // Update the type
-        parkingLots[floor][index].type = newType;
-        cout << "Parking spot modified successfully\n";
+        if (parkingTypeToVehicleTypes.find(newType) != parkingTypeToVehicleTypes.end()) {
+            spot.type = newType;
+            cout << "Enter new vehicle type: ";
+            cin >> newVehicleType;
+            if (parkingTypeToVehicleTypes[newType].find(newVehicleType) != parkingTypeToVehicleTypes[newType].end()) {
+                spot.vehicleType = newVehicleType;
+                cout << "Parking spot modified successfully\n";
+            }
+            else {
+                cout << "Invalid vehicle type for the selected parking type\n";
+            }
+        }
+        else {
+            cout << "Invalid parking type\n";
+        }
     }
     else {
         cout << "Invalid floor or index\n";
@@ -204,14 +235,24 @@ void deleteParkingSpot() {
     }
 }
 
-
 void setHourlyRate() {
-    cout << "Enter hourly rate for Compact spots: ";
-    cin >> hourlyRates[0];
-    cout << "Enter hourly rate for Handicapped spots: ";
-    cin >> hourlyRates[1];
-    cout << "Enter hourly rate for Motorcycle spots: ";
-    cin >> hourlyRates[2];
+    string parkingType, vehicleType;
+    double rate;
+    cout << "Enter parking type (Compact, Handicapped, Motorcycle): ";
+    cin >> parkingType;
+    cout << "Enter vehicle type: ";
+    cin >> vehicleType;
+    cout << "Enter hourly rate: ";
+    cin >> rate;
+
+    if (parkingTypeToVehicleTypes.find(parkingType) != parkingTypeToVehicleTypes.end() &&
+        parkingTypeToVehicleTypes[parkingType].find(vehicleType) != parkingTypeToVehicleTypes[parkingType].end()) {
+        hourlyRates[parkingType][vehicleType] = rate;
+        cout << "Hourly rate set successfully\n";
+    }
+    else {
+        cout << "Invalid parking type or vehicle type\n";
+    }
 }
 
 void setDailyMaxRate() {
@@ -226,9 +267,10 @@ void searchAvailableSpots() {
 
     for (const auto& floor : parkingLots) {
         cout << "Floor: " << floor.first << "\n";
-        for (const auto& spot : floor.second) {
-            if (!spot.isOccupied && spot.vehicleType == vehicleType) {
-                cout << "Type: " << spot.type << ", Available\n";
+        for (size_t i = 0; i < floor.second.size(); ++i) {
+            const auto& spot = floor.second[i];
+            if (!spot.isOccupied && parkingTypeToVehicleTypes[spot.type].find(vehicleType) != parkingTypeToVehicleTypes[spot.type].end()) {
+                cout << "Index: " << i << ", Type: " << spot.type << ", Available\n";
             }
         }
     }
@@ -248,15 +290,31 @@ void rentParkingSpot() {
     cout << "Enter entrance (1 or 2): ";
     cin >> entrance;
 
+    if (parkingTypeToVehicleTypes.find(type) == parkingTypeToVehicleTypes.end()) {
+        cout << "Invalid parking type\n";
+        return;
+    }
+
+    string vehicleType;
+    cout << "Enter vehicle type: ";
+    cin >> vehicleType;
+
+    if (parkingTypeToVehicleTypes[type].find(vehicleType) == parkingTypeToVehicleTypes[type].end()) {
+        cout << "Invalid vehicle type for the selected parking type\n";
+        return;
+    }
+
     for (auto& spot : parkingLots[floor]) {
         if (!spot.isOccupied && spot.type == type) {
             spot.isOccupied = true;
-            spot.vehicleType = type;
+            spot.vehicleType = vehicleType;
             spot.plateNumber = plateNumber;
             spot.startTime = time(nullptr);
             spot.entrance = entrance;
             customers[plateNumber].startTime = spot.startTime;
             customers[plateNumber].entrance = entrance;
+            customers[plateNumber].parkingType = type;
+            customers[plateNumber].vehicleType = vehicleType;
             cout << "Parking spot rented successfully\n";
             return;
         }
@@ -277,17 +335,13 @@ void settleParkingFee() {
     Customer& customer = customers[plateNumber];
     customer.endTime = time(nullptr);
     double totalHours = difftime(customer.endTime, customer.startTime) / 3600.0;
-    double rate = hourlyRates[0]; // Default to Compact rate for now
-
-    // Adjust rate based on parking type
-    if (customer.parkingType == "Handicapped") {
-        rate = hourlyRates[1];
-    }
-    else if (customer.parkingType == "Motorcycle") {
-        rate = hourlyRates[2];
-    }
-
+    double rate = hourlyRates[customer.parkingType][customer.vehicleType];
     customer.payment = totalHours * rate;
+
+    // Increase hourly rate by 20% for every 6 hours parked
+    int sixHourIntervals = static_cast<int>(totalHours) / 6;
+    customer.payment *= (1 + 0.2 * sixHourIntervals);
+
     if (customer.payment > dailyMaxRate) {
         customer.payment = dailyMaxRate;
     }
@@ -312,6 +366,35 @@ void settleParkingFee() {
     cout << "Payment settled and receipt printed\n";
 }
 
+void modifyParkingTypeVehicleTypes() {
+    string parkingType, vehicleType;
+    cout << "Enter parking type to modify (Compact, Handicapped, Motorcycle): ";
+    cin >> parkingType;
+
+    if (parkingTypeToVehicleTypes.find(parkingType) == parkingTypeToVehicleTypes.end()) {
+        cout << "Invalid parking type\n";
+        return;
+    }
+
+    cout << "Enter vehicle type to add or remove: ";
+    cin >> vehicleType;
+    char choice;
+    cout << "Add or remove (a/r): ";
+    cin >> choice;
+
+    if (choice == 'a') {
+        parkingTypeToVehicleTypes[parkingType].insert(vehicleType);
+        cout << "Vehicle type added to parking type\n";
+    }
+    else if (choice == 'r') {
+        parkingTypeToVehicleTypes[parkingType].erase(vehicleType);
+        cout << "Vehicle type removed from parking type\n";
+    }
+    else {
+        cout << "Invalid choice\n";
+    }
+}
+
 void saveData() {
     ofstream outFile("parkingLots.dat");
     for (const auto& floor : parkingLots) {
@@ -325,6 +408,24 @@ void saveData() {
     outFile.open("customers.dat");
     for (const auto& customer : customers) {
         outFile << customer.first << " " << customer.second.startTime << " " << customer.second.endTime << " " << customer.second.parkingType << " " << customer.second.vehicleType << " " << customer.second.entrance << " " << customer.second.exit << " " << customer.second.payment << "\n";
+    }
+    outFile.close();
+
+    outFile.open("parkingTypeToVehicleTypes.dat");
+    for (const auto& type : parkingTypeToVehicleTypes) {
+        outFile << type.first;
+        for (const auto& vehicle : type.second) {
+            outFile << " " << vehicle;
+        }
+        outFile << "\n";
+    }
+    outFile.close();
+
+    outFile.open("hourlyRates.dat");
+    for (const auto& type : hourlyRates) {
+        for (const auto& rate : type.second) {
+            outFile << type.first << " " << rate.first << " " << rate.second << "\n";
+        }
     }
     outFile.close();
 }
@@ -356,6 +457,29 @@ void loadData() {
         while (inFile >> plateNumber >> startTime >> endTime >> parkingType >> vehicleType >> entrance >> exit >> payment) {
             Customer customer = { plateNumber, startTime, endTime, parkingType, vehicleType, entrance, exit, payment };
             customers[plateNumber] = customer;
+        }
+        inFile.close();
+    }
+
+    inFile.open("parkingTypeToVehicleTypes.dat");
+    if (inFile) {
+        string parkingType, vehicleType;
+        while (inFile >> parkingType) {
+            set<string> vehicleTypes;
+            while (inFile >> vehicleType) {
+                vehicleTypes.insert(vehicleType);
+            }
+            parkingTypeToVehicleTypes[parkingType] = vehicleTypes;
+        }
+        inFile.close();
+    }
+
+    inFile.open("hourlyRates.dat");
+    if (inFile) {
+        string parkingType, vehicleType;
+        double rate;
+        while (inFile >> parkingType >> vehicleType >> rate) {
+            hourlyRates[parkingType][vehicleType] = rate;
         }
         inFile.close();
     }
