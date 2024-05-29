@@ -414,6 +414,7 @@ void deleteParkingSpot() {
 
             if (it != spots.end()) {
                 it->type.clear();
+                it->isOccupied = true; // Set the spot to be unavailable
                 cout << "Parking spot " << id << " deleted successfully\n";
             }
             else {
