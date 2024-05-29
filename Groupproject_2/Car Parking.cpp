@@ -616,7 +616,7 @@ void rentParkingSpot() {
         // Validate parking type and vehicle type
         if (parkingLots.find(floor) == parkingLots.end()) {
             cout << "Invalid floor. Please try again.\n";
-            this_thread::sleep_for(chrono::seconds(2));  // Pause for 2 seconds
+            std::this_thread::sleep_for(std::chrono::seconds(2));  // Pause for 2 seconds
             continue;
         }
 
@@ -627,7 +627,7 @@ void rentParkingSpot() {
 
         if (it == spots.end() || it->isOccupied) {
             cout << "Invalid spot ID or the spot is already occupied. Please try again.\n";
-            this_thread::sleep_for(chrono::seconds(2));  // Pause for 2 seconds
+            std::this_thread::sleep_for(std::chrono::seconds(2));  // Pause for 2 seconds
             continue;
         }
 
@@ -635,7 +635,7 @@ void rentParkingSpot() {
         if (parkingTypeToVehicleTypes.find(type) == parkingTypeToVehicleTypes.end() ||
             parkingTypeToVehicleTypes[type].find(vehicleType) == parkingTypeToVehicleTypes[type].end()) {
             cout << "Invalid parking type or vehicle type. Please try again.\n";
-            this_thread::sleep_for(chrono::seconds(2));  // Pause for 2 seconds
+            std::this_thread::sleep_for(std::chrono::seconds(2));  // Pause for 2 seconds
             continue;
         }
 
@@ -647,7 +647,7 @@ void rentParkingSpot() {
         it->entrance = entrance;
         customers[currentPlateNumber].startTime = it->startTime;
         customers[currentPlateNumber].entrance = entrance;
-        customers[currentPlateNumber].parkingType = type;
+        customers[currentPlateNumber].parkingType = type;  // Ensure parking type is recorded correctly
         customers[currentPlateNumber].vehicleType = vehicleType;
         saveData();
         cout << "Parking spot rented successfully\n";
@@ -662,23 +662,84 @@ void rentParkingSpot() {
 void settleParkingFee() {
     clearScreen();
 
+    // Ensure data is up-to-date by loading from file
+    loadData();
+
     if (customers.find(currentPlateNumber) == customers.end()) {
-        cout << "No such customer\n";
+        cout << "No such customer. Press any key to continue...";
+        cin.ignore();
+        cin.get();
         return;
     }
 
     Customer& customer = customers[currentPlateNumber];
     customer.endTime = time(nullptr);
-    double totalHours = difftime(customer.endTime, customer.startTime) / 3600.0;
+    double totalHours = ceil(difftime(customer.endTime, customer.startTime) / 3600.0); // Round up to nearest hour
     double rate = hourlyRates[customer.parkingType]["Default"];
-    customer.payment = totalHours * rate;
+    double initialPayment = totalHours * rate;
 
+    // Add surcharge for each 6-hour interval
+    int sixHourIntervals = static_cast<int>(totalHours) / 6;
+    double surcharge = 0.0;
+    if (sixHourIntervals > 0) {
+        for (int i = 1; i <= sixHourIntervals; ++i) {
+            surcharge += 6 * rate * 0.2 * i;
+        }
+        // Add surcharge for the remaining hours after the last 6-hour interval
+        double remainingHours = totalHours - (sixHourIntervals * 6);
+        surcharge += remainingHours * rate * 0.2 * sixHourIntervals;
+    }
+
+    customer.payment = initialPayment + surcharge;
+
+    // Apply daily max rate
     if (customer.payment > dailyMaxRate) {
         customer.payment = dailyMaxRate;
     }
 
     cout << "Total hours parked: " << totalHours << "\n";
     cout << "Total payment due: $" << customer.payment << "\n";
+
+    char choice;
+    cout << "Do you want to proceed with the payment? (y/n): ";
+    cin >> choice;
+    if (choice != 'y' && choice != 'Y') {
+        cout << "Payment cancelled. Press any key to continue...";
+        cin.ignore();
+        cin.get();
+        return;
+    }
+
+    string cardNumber, password;
+    while (true) {
+        cout << "Enter your 10-digit card number: ";
+        cin >> cardNumber;
+        cout << "Enter your 6-digit password: ";
+        cin >> password;
+
+        if (cardNumber.length() == 10 && all_of(cardNumber.begin(), cardNumber.end(), ::isdigit) &&
+            password.length() == 6 && all_of(password.begin(), password.end(), ::isdigit)) {
+            cout << "Payment processed successfully. Receipt is being printed...\n";
+            break;
+        }
+        else {
+            cout << "Invalid card number or password. Please try again.\n";
+        }
+    }
+
+    int exit;
+    while (true) {
+        cout << "Enter exit number you will leave from (1 or 2): ";
+        cin >> exit;
+
+        if (exit == 1 || exit == 2) {
+            customer.exit = exit;
+            break;
+        }
+        else {
+            cout << "Invalid exit number. Please enter 1 or 2.\n";
+        }
+    }
 
     for (auto& floor : parkingLots) {
         for (auto& spot : floor.second) {
@@ -699,6 +760,7 @@ void settleParkingFee() {
     cin.ignore();
     cin.get();
 }
+
 
 void saveData() {
     ofstream outFile("adminPassword.dat");
@@ -758,6 +820,7 @@ void saveData() {
         outFile.close();
     }
 }
+
 
 void loadData() {
     ifstream inFile;
@@ -854,6 +917,7 @@ void loadData() {
         dailyMaxRate = 50.0; // Default daily maximum rate if file doesn't exist
     }
 }
+
 
 void clearScreen() {
     system("cls");
