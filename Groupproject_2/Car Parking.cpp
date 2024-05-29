@@ -673,7 +673,7 @@ void viewCustomerInformation() {
             }
 
             cout << "Current parking duration: " << totalHours << " hours\n";
-            cout << "Current payment due: $" << fixed << setprecision(2) << payment << "\n";
+            cout << "Current estimated payment due: $" << fixed << setprecision(2) << payment << "\n";
             cout << "End Time: Not yet departed\n"; // ÏÔÊ¾Î´Àë¿ª
         }
         else {
@@ -728,7 +728,9 @@ void addCustomerInformation() {
 
 void deleteCustomerInformation() {
     clearScreen();
-    cout << "All Customers:\n";
+    cout << "Customer Information:\n";
+
+    // Display all customer information
     for (const auto& customer : customers) {
         cout << "Plate Number: " << customer.first << "\n";
         cout << "Vehicle Type: " << customer.second.vehicleType << "\n";
@@ -741,7 +743,6 @@ void deleteCustomerInformation() {
 
     auto it = customers.find(plateNumber);
     if (it != customers.end()) {
-        clearScreen();  // Clear screen before displaying selected customer info
         // Display customer information before deletion
         cout << "Customer Information:\n";
         cout << "Plate Number: " << it->second.plateNumber << "\n";
@@ -752,6 +753,20 @@ void deleteCustomerInformation() {
         cout << "Are you sure you want to delete this customer? (y/n): ";
         cin >> confirm;
         if (confirm == 'y' || confirm == 'Y') {
+            // Clear the parking spot occupation
+            for (auto& floor : parkingLots) {
+                for (auto& spot : floor.second) {
+                    if (spot.plateNumber == plateNumber) {
+                        spot.isOccupied = false;
+                        spot.vehicleType = "";
+                        spot.plateNumber = "";
+                        spot.startTime = 0;
+                        spot.entrance = 0;
+                        break;
+                    }
+                }
+            }
+
             customers.erase(it);
             saveData();
             cout << "Customer information deleted successfully\n";
