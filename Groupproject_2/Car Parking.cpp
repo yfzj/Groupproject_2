@@ -5,6 +5,7 @@
 #include <ctime>
 #include <map>
 #include <set>
+#include <cstdlib>  // For system("clear")
 
 using namespace std;
 
@@ -53,11 +54,13 @@ void settleParkingFee();
 void saveData();
 void loadData();
 void modifyParkingTypeVehicleTypes();
+void clearScreen();
 
 int main() {
     initializeSystem();
     int choice;
     do {
+        clearScreen();
         cout << "Welcome to the Parking Management System\n";
         cout << "1. Admin Login\n";
         cout << "2. Customer Login\n";
@@ -101,6 +104,7 @@ void adminLogin() {
     if (password == adminPassword) {
         int choice;
         do {
+            clearScreen();
             cout << "Admin System\n";
             cout << "1. Browse Parking Information\n";
             cout << "2. Add Parking Spot\n";
@@ -144,6 +148,7 @@ void customerLogin() {
 
     int choice;
     do {
+        clearScreen();
         cout << "Customer System\n";
         cout << "1. Search Available Spots\n";
         cout << "2. Rent Parking Spot\n";
@@ -160,6 +165,7 @@ void customerLogin() {
 }
 
 void displayParkingStatus() {
+    clearScreen();
     for (const auto& floor : parkingLots) {
         cout << "Floor: " << floor.first << "\n";
         for (size_t i = 0; i < floor.second.size(); ++i) {
@@ -167,24 +173,39 @@ void displayParkingStatus() {
             cout << "Index: " << i << ", Type: " << spot.type << ", Occupied: " << (spot.isOccupied ? "Yes" : "No") << "\n";
         }
     }
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
 }
 
 void addParkingSpot() {
     string floor;
+    int count;
     cout << "Enter floor (e.g., B1, B2): ";
     cin >> floor;
+    cout << "Enter number of spots to add: ";
+    cin >> count;
 
     ParkingSpot newSpot;
     cout << "Enter spot type (Compact, Handicapped, Motorcycle): ";
     cin >> newSpot.type;
+    if (parkingTypeToVehicleTypes.find(newSpot.type) == parkingTypeToVehicleTypes.end()) {
+        cout << "Invalid parking type\n";
+        return;
+    }
     newSpot.isOccupied = false;
 
-    parkingLots[floor].push_back(newSpot);
-    cout << "Parking spot added successfully\n";
+    for (int i = 0; i < count; ++i) {
+        parkingLots[floor].push_back(newSpot);
+    }
+    cout << "Parking spots added successfully\n";
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
 }
 
 void modifyParkingSpot() {
-    string floor, type, newType, newVehicleType;
+    string floor, newType, newVehicleType;
     int index;
     cout << "Enter floor (e.g., B1, B2): ";
     cin >> floor;
@@ -216,6 +237,9 @@ void modifyParkingSpot() {
     else {
         cout << "Invalid floor or index\n";
     }
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
 }
 
 void deleteParkingSpot() {
@@ -233,6 +257,9 @@ void deleteParkingSpot() {
     else {
         cout << "Invalid floor or index\n";
     }
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
 }
 
 void setHourlyRate() {
@@ -253,14 +280,21 @@ void setHourlyRate() {
     else {
         cout << "Invalid parking type or vehicle type\n";
     }
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
 }
 
 void setDailyMaxRate() {
     cout << "Enter daily maximum rate: ";
     cin >> dailyMaxRate;
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
 }
 
 void searchAvailableSpots() {
+    clearScreen();
     string vehicleType;
     cout << "Enter vehicle type (Car, Van, Truck, Motorcycle): ";
     cin >> vehicleType;
@@ -274,9 +308,13 @@ void searchAvailableSpots() {
             }
         }
     }
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
 }
 
 void rentParkingSpot() {
+    clearScreen();
     string plateNumber;
     cout << "Enter your plate number: ";
     cin >> plateNumber;
@@ -316,13 +354,20 @@ void rentParkingSpot() {
             customers[plateNumber].parkingType = type;
             customers[plateNumber].vehicleType = vehicleType;
             cout << "Parking spot rented successfully\n";
+            cout << "Press any key to continue...";
+            cin.ignore();
+            cin.get();
             return;
         }
     }
     cout << "No available spots of the requested type\n";
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
 }
 
 void settleParkingFee() {
+    clearScreen();
     string plateNumber;
     cout << "Enter your plate number: ";
     cin >> plateNumber;
@@ -364,9 +409,13 @@ void settleParkingFee() {
 
     customers.erase(plateNumber);
     cout << "Payment settled and receipt printed\n";
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
 }
 
 void modifyParkingTypeVehicleTypes() {
+    clearScreen();
     string parkingType, vehicleType;
     cout << "Enter parking type to modify (Compact, Handicapped, Motorcycle): ";
     cin >> parkingType;
@@ -393,6 +442,9 @@ void modifyParkingTypeVehicleTypes() {
     else {
         cout << "Invalid choice\n";
     }
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
 }
 
 void saveData() {
@@ -439,10 +491,13 @@ void loadData() {
         int entrance;
 
         while (inFile >> floor) {
+            vector<ParkingSpot> spots;
             while (inFile >> type >> isOccupied >> vehicleType >> plateNumber >> startTime >> entrance) {
                 ParkingSpot spot = { type, isOccupied, vehicleType, plateNumber, startTime, entrance };
-                parkingLots[floor].push_back(spot);
+                spots.push_back(spot);
+                if (inFile.peek() == '\n') break;
             }
+            parkingLots[floor] = spots;
         }
         inFile.close();
     }
@@ -467,6 +522,7 @@ void loadData() {
         while (inFile >> parkingType) {
             set<string> vehicleTypes;
             while (inFile >> vehicleType) {
+                if (vehicleType == "\n") break;
                 vehicleTypes.insert(vehicleType);
             }
             parkingTypeToVehicleTypes[parkingType] = vehicleTypes;
@@ -484,3 +540,8 @@ void loadData() {
         inFile.close();
     }
 }
+
+void clearScreen() {
+    system("cls");
+}
+
