@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <iomanip>
 #include <limits>
+#include <thread>   
+#include <chrono>  
 
 using namespace std;
 
@@ -156,7 +158,6 @@ void customerLogin() {
         }
     } while (choice != 0);
 }
-
 
 void displayParkingStatus() {
     clearScreen();
@@ -569,94 +570,94 @@ void searchAvailableSpots() {
 }
 
 void rentParkingSpot() {
-    clearScreen();
+    while (true) {
+        clearScreen();
 
-    // Display available floors and their available spots
-    cout << "Available floors and spots:\n";
-    for (const auto& floor : parkingLots) {
-        cout << "Floor: " << floor.first << "\n";
-        int count = 0;
-        for (const auto& spot : floor.second) {
-            if (!spot.isOccupied) {
-                cout << "  ID: " << spot.id << ", Type: " << spot.type << "  ";
-                if (++count % 3 == 0) {
-                    cout << "\n";
+        // Display available floors and their available spots
+        cout << "Available floors and spots:\n";
+        for (const auto& floor : parkingLots) {
+            cout << "Floor: " << floor.first << "\n";
+            int count = 0;
+            for (const auto& spot : floor.second) {
+                if (!spot.isOccupied) {
+                    cout << "  ID: " << spot.id << ", Type: " << spot.type << "  ";
+                    if (++count % 3 == 0) {
+                        cout << "\n";
+                    }
                 }
             }
+            if (count % 3 != 0) {
+                cout << "\n"; // Ensure a new line if the last line isn't complete
+            }
         }
-        if (count % 3 != 0) {
-            cout << "\n"; // Ensure a new line if the last line isn't complete
+
+        // Display available vehicle types from file, grouped by parking type
+        cout << "Available vehicle types by parking type:\n";
+        for (const auto& type : parkingTypeToVehicleTypes) {
+            cout << type.first << ": ";
+            for (const auto& vehicle : type.second) {
+                cout << vehicle << " ";
+            }
+            cout << "\n";
         }
-    }
 
-    // Display available vehicle types from file
-    set<string> availableVehicleTypes;
-    for (const auto& type : parkingTypeToVehicleTypes) {
-        for (const auto& vehicle : type.second) {
-            availableVehicleTypes.insert(vehicle);
+        // Get user input
+        string floor, spotId, vehicleType;
+        int entrance;
+        cout << "Enter floor you want (e.g., B1, B2): ";
+        cin >> floor;
+        cout << "Enter spot ID you want: ";
+        cin >> spotId;
+        cout << "Enter entrance you enter in (1 or 2): ";
+        cin >> entrance;
+        cout << "Enter your vehicle type: ";
+        cin >> vehicleType;
+
+        // Validate parking type and vehicle type
+        if (parkingLots.find(floor) == parkingLots.end()) {
+            cout << "Invalid floor. Please try again.\n";
+            this_thread::sleep_for(chrono::seconds(2));  // Pause for 2 seconds
+            continue;
         }
-    }
 
-    cout << "Available vehicle types: ";
-    for (const auto& vehicle : availableVehicleTypes) {
-        cout << vehicle << " ";
-    }
-    cout << "\n";
+        auto& spots = parkingLots[floor];
+        auto it = find_if(spots.begin(), spots.end(), [&spotId](const ParkingSpot& spot) {
+            return spot.id == spotId;
+            });
 
-    // Get user input
-    string floor, spotId, vehicleType;
-    int entrance;
-    cout << "Enter floor you want (e.g., B1, B2): ";
-    cin >> floor;
-    cout << "Enter spot ID you want: ";
-    cin >> spotId;
-    cout << "Enter entrance you enter in (1 or 2): ";
-    cin >> entrance;
-    cout << "Enter your vehicle type: ";
-    cin >> vehicleType;
+        if (it == spots.end() || it->isOccupied) {
+            cout << "Invalid spot ID or the spot is already occupied. Please try again.\n";
+            this_thread::sleep_for(chrono::seconds(2));  // Pause for 2 seconds
+            continue;
+        }
 
-    // Validate parking type and vehicle type
-    auto& spots = parkingLots[floor];
-    auto it = find_if(spots.begin(), spots.end(), [&spotId](const ParkingSpot& spot) {
-        return spot.id == spotId;
-        });
+        string type = it->type;
+        if (parkingTypeToVehicleTypes.find(type) == parkingTypeToVehicleTypes.end() ||
+            parkingTypeToVehicleTypes[type].find(vehicleType) == parkingTypeToVehicleTypes[type].end()) {
+            cout << "Invalid parking type or vehicle type. Please try again.\n";
+            this_thread::sleep_for(chrono::seconds(2));  // Pause for 2 seconds
+            continue;
+        }
 
-    if (it == spots.end() || it->isOccupied) {
-        cout << "Invalid spot ID or the spot is already occupied\n";
-        cout << "Press any key to continue...";
+        // Rent the parking spot
+        it->isOccupied = true;
+        it->vehicleType = vehicleType;
+        it->plateNumber = currentPlateNumber;
+        it->startTime = time(nullptr);
+        it->entrance = entrance;
+        customers[currentPlateNumber].startTime = it->startTime;
+        customers[currentPlateNumber].entrance = entrance;
+        customers[currentPlateNumber].parkingType = type;
+        customers[currentPlateNumber].vehicleType = vehicleType;
+        saveData();
+        cout << "Parking spot rented successfully\n";
+
+        cout << "Press any key to return to the customer menu...";
         cin.ignore();
         cin.get();
-        return;
+        break;
     }
-
-    string type = it->type;
-    if (parkingTypeToVehicleTypes.find(type) == parkingTypeToVehicleTypes.end() ||
-        parkingTypeToVehicleTypes[type].find(vehicleType) == parkingTypeToVehicleTypes[type].end()) {
-        cout << "Invalid parking type or vehicle type\n";
-        cout << "Press any key to continue...";
-        cin.ignore();
-        cin.get();
-        return;
-    }
-
-    // Rent the parking spot
-    it->isOccupied = true;
-    it->vehicleType = vehicleType;
-    it->plateNumber = currentPlateNumber;
-    it->startTime = time(nullptr);
-    it->entrance = entrance;
-    customers[currentPlateNumber].startTime = it->startTime;
-    customers[currentPlateNumber].entrance = entrance;
-    customers[currentPlateNumber].parkingType = type;
-    customers[currentPlateNumber].vehicleType = vehicleType;
-    saveData();
-    cout << "Parking spot rented successfully\n";
-
-    cout << "Press any key to continue...";
-    cin.ignore();
-    cin.get();
 }
-
 
 void settleParkingFee() {
     clearScreen();
