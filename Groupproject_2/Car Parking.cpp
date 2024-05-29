@@ -431,33 +431,51 @@ void deleteParkingSpot() {
 }
 
 void setHourlyRate() {
-    string parkingType, vehicleType;
+    string parkingType;
     double rate;
-    cout << "Enter parking type (Compact, Handicapped, Motorcycle): ";
-    cin >> parkingType;
-    cout << "Enter vehicle type: ";
-    cin >> vehicleType;
-    cout << "Enter hourly rate: ";
-    cin >> rate;
 
-    if (parkingTypeToVehicleTypes.find(parkingType) != parkingTypeToVehicleTypes.end() &&
-        parkingTypeToVehicleTypes[parkingType].find(vehicleType) != parkingTypeToVehicleTypes[parkingType].end()) {
-        hourlyRates[parkingType][vehicleType] = rate;
+    // Display available parking types from file
+    cout << "Available parking types: ";
+    for (const auto& type : parkingTypeToVehicleTypes) {
+        cout << type.first << " ";
+    }
+    cout << "\nEnter parking type: ";
+    cin >> parkingType;
+
+    if (parkingTypeToVehicleTypes.find(parkingType) != parkingTypeToVehicleTypes.end()) {
+        // Display current hourly rate for the selected parking type
+        if (hourlyRates.find(parkingType) != hourlyRates.end()) {
+            cout << "Current hourly rate for " << parkingType << ": $" << hourlyRates[parkingType]["Default"] << "\n";
+        }
+        else {
+            cout << "No current hourly rate set for " << parkingType << "\n";
+        }
+
+        cout << "Enter new hourly rate: ";
+        cin >> rate;
+
+        hourlyRates[parkingType]["Default"] = rate;  // Use a default key since vehicle type is no longer relevant
         saveData();
         cout << "Hourly rate set successfully\n";
     }
     else {
-        cout << "Invalid parking type or vehicle type\n";
+        cout << "Invalid parking type\n";
     }
+
     cout << "Press any key to continue...";
     cin.ignore();
     cin.get();
 }
 
 void setDailyMaxRate() {
-    cout << "Enter daily maximum rate: ";
+    // Display current daily maximum rate
+    cout << "Current daily maximum rate: $" << dailyMaxRate << "\n";
+
+    cout << "Enter new daily maximum rate: ";
     cin >> dailyMaxRate;
     saveData();
+    cout << "Daily maximum rate set successfully\n";
+
     cout << "Press any key to continue...";
     cin.ignore();
     cin.get();
@@ -635,7 +653,7 @@ void saveData() {
                     << spot.vehicleType << " " << spot.plateNumber << " "
                     << spot.startTime << " " << spot.entrance << "\n";
             }
-            outFile << "#\n"; // 标记楼层结束
+            outFile << "#\n"; // Mark end of floor spots
         }
         outFile.close();
     }
@@ -666,10 +684,14 @@ void saveData() {
     outFile.open("hourlyRates.dat");
     if (outFile) {
         for (const auto& type : hourlyRates) {
-            for (const auto& rate : type.second) {
-                outFile << type.first << " " << rate.first << " " << rate.second << "\n";
-            }
+            outFile << type.first << " " << type.second.at("Default") << "\n"; // Save the rate associated with the parking type
         }
+        outFile.close();
+    }
+
+    outFile.open("dailyMaxRate.dat");
+    if (outFile) {
+        outFile << dailyMaxRate << "\n";
         outFile.close();
     }
 }
@@ -695,7 +717,7 @@ void loadData() {
             vector<ParkingSpot> spots;
             string line;
             while (getline(inFile, line)) {
-                if (line == "#") break; // 结束当前楼层的读取
+                if (line == "#") break; // End of current floor
                 istringstream iss(line);
                 ParkingSpot spot;
                 iss >> spot.id >> spot.type >> spot.isOccupied >> spot.vehicleType
@@ -731,12 +753,12 @@ void loadData() {
                 vehicleTypes.insert(vehicleType);
             }
             parkingTypeToVehicleTypes[parkingType] = vehicleTypes;
-            inFile.ignore(numeric_limits<streamsize>::max(), '\n'); // 忽略行末的换行符
+            inFile.ignore(numeric_limits<streamsize>::max(), '\n'); // Ignore the rest of the line
         }
         inFile.close();
     }
     else {
-        // 初始化默认值
+        // Initialize default values if file doesn't exist
         parkingTypeToVehicleTypes["Compact"] = { "Car", "Van" };
         parkingTypeToVehicleTypes["Handicapped"] = { "Truck", "Otto" };
         parkingTypeToVehicleTypes["Motorcycle"] = { "Motorcycle" };
@@ -745,20 +767,28 @@ void loadData() {
     // Load hourly rates
     inFile.open("hourlyRates.dat");
     if (inFile) {
-        string parkingType, vehicleType;
+        string parkingType;
         double rate;
-        while (inFile >> parkingType >> vehicleType >> rate) {
-            hourlyRates[parkingType][vehicleType] = rate;
+        while (inFile >> parkingType >> rate) {
+            hourlyRates[parkingType]["Default"] = rate; // Load the rate associated with the parking type
         }
         inFile.close();
     }
     else {
-        // 初始化默认值
-        hourlyRates["Compact"]["Car"] = 2.0;
-        hourlyRates["Compact"]["Van"] = 2.5;
-        hourlyRates["Handicapped"]["Truck"] = 3.0;
-        hourlyRates["Handicapped"]["Otto"] = 3.5;
-        hourlyRates["Motorcycle"]["Motorcycle"] = 1.5;
+        // Initialize default hourly rates if file doesn't exist
+        hourlyRates["Compact"]["Default"] = 2.0;
+        hourlyRates["Handicapped"]["Default"] = 3.0;
+        hourlyRates["Motorcycle"]["Default"] = 1.5;
+    }
+
+    // Load daily maximum rate
+    inFile.open("dailyMaxRate.dat");
+    if (inFile) {
+        inFile >> dailyMaxRate;
+        inFile.close();
+    }
+    else {
+        dailyMaxRate = 50.0; // Default daily maximum rate if file doesn't exist
     }
 }
 
