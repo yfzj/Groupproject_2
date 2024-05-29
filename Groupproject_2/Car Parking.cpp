@@ -605,10 +605,11 @@ void displayVisualParkingStatus(const string& floor) {
     cout << "Floor: " << floor << "\n";
     const auto& spots = parkingLots[floor];
     for (size_t i = 0; i < spots.size(); ++i) {
-        if (i % 10 == 0) cout << "\n"; // 每10个车位换一行
+        if (i % 5 == 0 && i != 0) cout << "\n"; // 每5个车位换一行
         const auto& spot = spots[i];
         string spotStatus = spot.isOccupied ? "[X]" : "[ ]";
         cout << spotStatus << spot.id << "(" << spot.type << ") ";
     }
     cout << "\n";
 }
+
