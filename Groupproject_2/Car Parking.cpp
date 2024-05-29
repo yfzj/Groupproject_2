@@ -218,49 +218,113 @@ void addParkingSpot() {
 }
 
 void modifyParkingSpot() {
-    string floor, newType, newVehicleType;
-    string spotId;
-    cout << "Enter floor (e.g., B1, B2): ";
+    string floor, newType;
+    cout << "Enter floor you want modify (e.g., B1, B2): ";
     cin >> floor;
-    cout << "Enter ID of the spot to modify:(e.g., B1_1,B1_2) ";
-    cin >> spotId;
 
     if (parkingLots.find(floor) != parkingLots.end()) {
         auto& spots = parkingLots[floor];
-        auto it = find_if(spots.begin(), spots.end(), [&spotId](const ParkingSpot& spot) {
-            return spot.id == spotId;
-            });
 
-        if (it != spots.end()) {
-            auto& spot = *it;
-            cout << "Current Type: " << spot.type << ", Is Occupied: " << (spot.isOccupied ? "Yes" : "No") << "\n";
-            cout << "Enter new type (Compact, Handicapped, Motorcycle): ";
-            cin >> newType;
+        // Display current parking spots information on the selected floor
+        map<string, vector<string>> typeToSpots;
+        for (const auto& spot : spots) {
+            if (!spot.type.empty()) {
+                typeToSpots[spot.type].push_back(spot.id);
+            }
+        }
 
-            if (parkingTypeToVehicleTypes.find(newType) != parkingTypeToVehicleTypes.end()) {
-                spot.type = newType;
-                cout << "Enter new vehicle type: ";
-                cin >> newVehicleType;
-                if (parkingTypeToVehicleTypes[newType].find(newVehicleType) != parkingTypeToVehicleTypes[newType].end()) {
-                    spot.vehicleType = newVehicleType;
-                    cout << "Parking spot modified successfully\n";
-                    saveData();
+        cout << "Current parking spots on " << floor << ":\n";
+        for (const auto& entry : typeToSpots) {
+            cout << entry.first << ": ";
+            for (size_t i = 0; i < entry.second.size(); ++i) {
+                if (i > 0 && stoi(entry.second[i].substr(entry.second[i].find('_') + 1)) != stoi(entry.second[i - 1].substr(entry.second[i - 1].find('_') + 1)) + 1) {
+                    cout << ", " << entry.second[i];
                 }
-                else {
-                    cout << "Invalid vehicle type for the selected parking type\n";
+                else if (i > 0 && (i == entry.second.size() - 1 || stoi(entry.second[i + 1].substr(entry.second[i + 1].find('_') + 1)) != stoi(entry.second[i].substr(entry.second[i].find('_') + 1)) + 1)) {
+                    cout << " to " << entry.second[i];
+                }
+                else if (i == 0) {
+                    cout << entry.second[i];
                 }
             }
-            else {
-                cout << "Invalid parking type\n";
+            cout << "\n";
+        }
+
+        cout << "Choose modification type:\n";
+        cout << "1. Modify multiple individual spots\n";
+        cout << "2. Modify a range of spots\n";
+        int choice;
+        cin >> choice;
+
+        vector<string> idsToModify;
+
+        if (choice == 1) {
+            // Input for individual spot IDs to modify
+            string spotIds;
+            cout << "Enter IDs of the spots to modify (separated by spaces): \n";
+            cout << "(Such as B1_1 B1_2 to modify the spots 1, 2 from B1)\n";
+            cin.ignore(); // Ignore any leftover newline character
+            getline(cin, spotIds);
+            stringstream ss(spotIds);
+            string spotId;
+            while (ss >> spotId) {
+                idsToModify.push_back(spotId);
+            }
+        }
+        else if (choice == 2) {
+            // Input for range of spot IDs to modify
+            string startId, endId;
+            cout << "Enter the start ID of the range to modify (e.g., B1_1): ";
+            cin >> startId;
+            cout << "Enter the end ID of the range to modify (e.g., B1_10): ";
+            cin >> endId;
+
+            int startIdx = stoi(startId.substr(startId.find('_') + 1));
+            int endIdx = stoi(endId.substr(endId.find('_') + 1));
+
+            for (int i = startIdx; i <= endIdx; ++i) {
+                idsToModify.push_back(floor + "_" + to_string(i));
             }
         }
         else {
-            cout << "Invalid spot ID\n";
+            cout << "Invalid choice\n";
+            return;
         }
+
+        // Show available parking types
+        cout << "Available parking types: ";
+        for (const auto& type : parkingTypeToVehicleTypes) {
+            cout << type.first << " ";
+        }
+        cout << "\nEnter new spot type: ";
+        cin >> newType;
+
+        if (parkingTypeToVehicleTypes.find(newType) == parkingTypeToVehicleTypes.end()) {
+            cout << "Invalid parking type\n";
+            return;
+        }
+
+        // Modify the specified spots
+        for (const string& id : idsToModify) {
+            auto it = find_if(spots.begin(), spots.end(), [&id](const ParkingSpot& spot) {
+                return spot.id == id;
+                });
+
+            if (it != spots.end()) {
+                it->type = newType;
+                cout << "Parking spot " << id << " modified successfully\n";
+            }
+            else {
+                cout << "Invalid spot ID: " << id << "\n";
+            }
+        }
+
+        saveData();
     }
     else {
         cout << "Invalid floor\n";
     }
+
     cout << "Press any key to continue...";
     cin.ignore();
     cin.get();
@@ -268,30 +332,61 @@ void modifyParkingSpot() {
 
 void deleteParkingSpot() {
     string floor;
-    cout << "Enter floor (e.g., B1, B2): ";
+    cout << "Enter floor you want to delete spots (e.g., B1, B2): ";
     cin >> floor;
 
     if (parkingLots.find(floor) != parkingLots.end()) {
         auto& spots = parkingLots[floor];
 
+        // Display current parking spots information on the selected floor
         cout << "Available spots on " << floor << ":\n";
         for (const auto& spot : spots) {
             cout << spot.id << " ";
         }
         cout << "\n";
 
-        cout << "Enter IDs of the spots to delete (separated by spaces): ";
-        cin.ignore();
-        string line;
-        getline(cin, line);
-        stringstream ss(line);
-        string spotId;
+        cout << "Choose deletion type:\n";
+        cout << "1. Delete multiple individual spots\n";
+        cout << "2. Delete a range of spots\n";
+        int choice;
+        cin >> choice;
 
         vector<string> idsToDelete;
-        while (ss >> spotId) {
-            idsToDelete.push_back(spotId);
+
+        if (choice == 1) {
+            // Input for individual spot IDs to delete
+            string spotIds;
+            cout << "Enter IDs of the spots to delete (separated by spaces): \n";
+            cout << "(Such as B1_1 B1_2 to delete the spots 1, 2 from B1)\n";
+            cin.ignore(); // Ignore any leftover newline character
+            getline(cin, spotIds);
+            stringstream ss(spotIds);
+            string spotId;
+            while (ss >> spotId) {
+                idsToDelete.push_back(spotId);
+            }
+        }
+        else if (choice == 2) {
+            // Input for range of spot IDs to delete
+            string startId, endId;
+            cout << "Enter the start ID of the range to delete (e.g., B1_1): ";
+            cin >> startId;
+            cout << "Enter the end ID of the range to delete (e.g., B1_10): ";
+            cin >> endId;
+
+            int startIdx = stoi(startId.substr(startId.find('_') + 1));
+            int endIdx = stoi(endId.substr(endId.find('_') + 1));
+
+            for (int i = startIdx; i <= endIdx; ++i) {
+                idsToDelete.push_back(floor + "_" + to_string(i));
+            }
+        }
+        else {
+            cout << "Invalid choice\n";
+            return;
         }
 
+        // Delete the specified spots
         for (const string& id : idsToDelete) {
             auto it = find_if(spots.begin(), spots.end(), [&id](const ParkingSpot& spot) {
                 return spot.id == id;
@@ -305,15 +400,18 @@ void deleteParkingSpot() {
                 cout << "Invalid spot ID: " << id << "\n";
             }
         }
+
         saveData();
     }
     else {
         cout << "Invalid floor\n";
     }
+
     cout << "Press any key to continue...";
     cin.ignore();
     cin.get();
 }
+
 
 void setHourlyRate() {
     string parkingType, vehicleType;
