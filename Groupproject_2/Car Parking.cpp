@@ -175,8 +175,14 @@ void addParkingSpot() {
     cout << "Enter number of spots to add: ";
     cin >> count;
 
+    // 显示当前的停车位类型供用户选择
+    cout << "Available parking types: ";
+    for (const auto& type : parkingTypeToVehicleTypes) {
+        cout << type.first << " ";
+    }
+    cout << "\nEnter spot type: ";
+
     ParkingSpot newSpot;
-    cout << "Enter spot type (Compact, Handicapped, Motorcycle): ";
     cin >> newSpot.type;
     if (parkingTypeToVehicleTypes.find(newSpot.type) == parkingTypeToVehicleTypes.end()) {
         cout << "Invalid parking type\n";
@@ -216,7 +222,7 @@ void modifyParkingSpot() {
     string spotId;
     cout << "Enter floor (e.g., B1, B2): ";
     cin >> floor;
-    cout << "Enter ID of the spot to modify: ";
+    cout << "Enter ID of the spot to modify:(e.g., B1_1,B1_2) ";
     cin >> spotId;
 
     if (parkingLots.find(floor) != parkingLots.end()) {
@@ -553,7 +559,6 @@ void saveData() {
     }
 }
 
-
 void loadData() {
     ifstream inFile;
 
@@ -641,8 +646,6 @@ void loadData() {
         hourlyRates["Motorcycle"]["Motorcycle"] = 1.5;
     }
 }
-
-
 
 void clearScreen() {
     system("cls");
