@@ -526,7 +526,6 @@ void modifyParkingTypeVehicleTypes() {
     cin.get();
 }
 
-
 void searchAvailableSpots() {
     clearScreen();
     string vehicleType;
@@ -644,40 +643,6 @@ void settleParkingFee() {
     customers.erase(plateNumber);
     saveData();
     cout << "Payment settled and receipt printed\n";
-    cout << "Press any key to continue...";
-    cin.ignore();
-    cin.get();
-}
-
-void modifyParkingTypeVehicleTypes() {
-    clearScreen();
-    string parkingType, vehicleType;
-    cout << "Enter parking type to modify (Compact, Handicapped, Motorcycle): ";
-    cin >> parkingType;
-
-    if (parkingTypeToVehicleTypes.find(parkingType) == parkingTypeToVehicleTypes.end()) {
-        cout << "Invalid parking type\n";
-        return;
-    }
-
-    cout << "Enter vehicle type to add or remove: ";
-    cin >> vehicleType;
-    char choice;
-    cout << "Add or remove (a/r): ";
-    cin >> choice;
-
-    if (choice == 'a') {
-        parkingTypeToVehicleTypes[parkingType].insert(vehicleType);
-        cout << "Vehicle type added to parking type\n";
-    }
-    else if (choice == 'r') {
-        parkingTypeToVehicleTypes[parkingType].erase(vehicleType);
-        cout << "Vehicle type removed from parking type\n";
-    }
-    else {
-        cout << "Invalid choice\n";
-    }
-    saveData();
     cout << "Press any key to continue...";
     cin.ignore();
     cin.get();
@@ -837,7 +802,6 @@ void loadData() {
         dailyMaxRate = 50.0; // Default daily maximum rate if file doesn't exist
     }
 }
-
 
 void clearScreen() {
     system("cls");
