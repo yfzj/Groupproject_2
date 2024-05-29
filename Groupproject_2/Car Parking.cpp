@@ -528,9 +528,30 @@ void modifyParkingTypeVehicleTypes() {
 
 void searchAvailableSpots() {
     clearScreen();
+
+    // Display available vehicle types from file
+    set<string> availableVehicleTypes;
+    for (const auto& type : parkingTypeToVehicleTypes) {
+        for (const auto& vehicle : type.second) {
+            availableVehicleTypes.insert(vehicle);
+        }
+    }
+
+    cout << "Available vehicle types: ";
+    for (const auto& vehicle : availableVehicleTypes) {
+        cout << vehicle << " ";
+    }
+    cout << "\nEnter vehicle type: ";
     string vehicleType;
-    cout << "Enter vehicle type (Car, Van, Truck, Motorcycle): ";
     cin >> vehicleType;
+
+    if (availableVehicleTypes.find(vehicleType) == availableVehicleTypes.end()) {
+        cout << "Invalid vehicle type\n";
+        cout << "Press any key to continue...";
+        cin.ignore();
+        cin.get();
+        return;
+    }
 
     for (const auto& floor : parkingLots) {
         cout << "Floor: " << floor.first << "\n";
@@ -540,6 +561,7 @@ void searchAvailableSpots() {
             }
         }
     }
+
     cout << "Press any key to continue...";
     cin.ignore();
     cin.get();
