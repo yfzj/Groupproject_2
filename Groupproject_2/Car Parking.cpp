@@ -7,6 +7,8 @@
 #include <set>
 #include <cstdlib>  // For system("clear")
 #include <algorithm> // For find_if
+#include <iomanip>
+#include <sstream>
 
 using namespace std;
 
@@ -89,23 +91,9 @@ void initializeSystem() {
         cout << "Please set the admin password: ";
         cin >> adminPassword;
     }
-
-    // Initialize parking types and vehicle types if not loaded
-    if (parkingTypeToVehicleTypes.empty()) {
-        parkingTypeToVehicleTypes["Compact"] = { "Car", "Van" };
-        parkingTypeToVehicleTypes["Handicapped"] = { "Truck", "Otto" };
-        parkingTypeToVehicleTypes["Motorcycle"] = { "Motorcycle" };
-    }
-
-    // Initialize hourly rates if not loaded
-    if (hourlyRates.empty()) {
-        hourlyRates["Compact"]["Car"] = 2.0;
-        hourlyRates["Compact"]["Van"] = 2.5;
-        hourlyRates["Handicapped"]["Truck"] = 3.0;
-        hourlyRates["Handicapped"]["Otto"] = 3.5;
-        hourlyRates["Motorcycle"]["Motorcycle"] = 1.5;
-    }
 }
+
+
 
 void adminLogin() {
     string password;
@@ -202,6 +190,7 @@ void addParkingSpot() {
     newSpot.isOccupied = false;
 
     auto& spots = parkingLots[floor];
+    int currentSize = spots.size();
     for (int i = 0; i < count; ++i) {
         auto it = find_if(spots.begin(), spots.end(), [](const ParkingSpot& spot) {
             return spot.type.empty(); // Find the first empty spot
@@ -213,9 +202,10 @@ void addParkingSpot() {
             it->plateNumber = newSpot.plateNumber;
             it->startTime = newSpot.startTime;
             it->entrance = newSpot.entrance;
+            it->id = generateParkingSpotId(floor, distance(spots.begin(), it)); // Update ID
         }
         else {
-            newSpot.id = generateParkingSpotId(floor, spots.size());
+            newSpot.id = generateParkingSpotId(floor, currentSize + i);
             spots.push_back(newSpot);
         }
     }
@@ -224,6 +214,7 @@ void addParkingSpot() {
     cin.ignore();
     cin.get();
 }
+
 
 void modifyParkingSpot() {
     string floor, newType, newVehicleType;
@@ -275,24 +266,45 @@ void modifyParkingSpot() {
 
 void deleteParkingSpot() {
     string floor;
-    string spotId;
     cout << "Enter floor (e.g., B1, B2): ";
     cin >> floor;
-    cout << "Enter ID of the spot to delete: ";
-    cin >> spotId;
 
     if (parkingLots.find(floor) != parkingLots.end()) {
         auto& spots = parkingLots[floor];
-        auto it = find_if(spots.begin(), spots.end(), [&spotId](const ParkingSpot& spot) {
-            return spot.id == spotId;
-            });
 
-        if (it != spots.end()) {
-            it->type.clear(); // Clear the type to mark it as deleted
-            cout << "Parking spot deleted successfully\n";
+        // Display all spot IDs for the given floor
+        cout << "Available spots on " << floor << ":\n";
+        for (const auto& spot : spots) {
+            cout << spot.id << " ";
         }
-        else {
-            cout << "Invalid spot ID\n";
+        cout << "\n";
+
+        // Prompt for IDs to delete
+        cout << "Enter IDs of the spots to delete (separated by spaces): ";
+        cin.ignore(); // Ignore the remaining newline character
+        string line;
+        getline(cin, line);
+        stringstream ss(line);
+        string spotId;
+
+        vector<string> idsToDelete;
+        while (ss >> spotId) {
+            idsToDelete.push_back(spotId);
+        }
+
+        // Delete the specified spots
+        for (const string& id : idsToDelete) {
+            auto it = find_if(spots.begin(), spots.end(), [&id](const ParkingSpot& spot) {
+                return spot.id == id;
+                });
+
+            if (it != spots.end()) {
+                it->type.clear(); // Clear the type to mark it as deleted
+                cout << "Parking spot " << id << " deleted successfully\n";
+            }
+            else {
+                cout << "Invalid spot ID: " << id << "\n";
+            }
         }
     }
     else {
@@ -490,51 +502,79 @@ void modifyParkingTypeVehicleTypes() {
 }
 
 void saveData() {
+    // Save admin password
     ofstream outFile("adminPassword.dat");
-    outFile << adminPassword;
-    outFile.close();
+    if (outFile) {
+        outFile << adminPassword;
+        outFile.close();
+    }
 
+    // Save parking lots
     outFile.open("parkingLots.dat");
-    for (const auto& floor : parkingLots) {
-        outFile << floor.first << "\n";
-        for (const auto& spot : floor.second) {
-            outFile << spot.id << " " << spot.type << " " << spot.isOccupied << " " << spot.vehicleType << " " << spot.plateNumber << " " << spot.startTime << " " << spot.entrance << "\n";
+    if (outFile) {
+        for (const auto& floor : parkingLots) {
+            outFile << floor.first << "\n";
+            for (const auto& spot : floor.second) {
+                outFile << spot.id << " " << spot.type << " " << spot.isOccupied << " "
+                    << spot.vehicleType << " " << spot.plateNumber << " "
+                    << spot.startTime << " " << spot.entrance << "\n";
+            }
         }
+        outFile.close();
     }
-    outFile.close();
 
+    // Save customers
     outFile.open("customers.dat");
-    for (const auto& customer : customers) {
-        outFile << customer.first << " " << customer.second.startTime << " " << customer.second.endTime << " " << customer.second.parkingType << " " << customer.second.vehicleType << " " << customer.second.entrance << " " << customer.second.exit << " " << customer.second.payment << "\n";
+    if (outFile) {
+        for (const auto& customer : customers) {
+            outFile << customer.first << " " << customer.second.startTime << " "
+                << customer.second.endTime << " " << customer.second.parkingType << " "
+                << customer.second.vehicleType << " " << customer.second.entrance << " "
+                << customer.second.exit << " " << customer.second.payment << "\n";
+        }
+        outFile.close();
     }
-    outFile.close();
 
+    // Save parkingTypeToVehicleTypes
     outFile.open("parkingTypeToVehicleTypes.dat");
-    for (const auto& type : parkingTypeToVehicleTypes) {
-        outFile << type.first;
-        for (const auto& vehicle : type.second) {
-            outFile << " " << vehicle;
+    if (outFile) {
+        for (const auto& type : parkingTypeToVehicleTypes) {
+            outFile << type.first;
+            for (const auto& vehicle : type.second) {
+                outFile << " " << vehicle;
+            }
+            outFile << "\n";
         }
-        outFile << "\n";
+        outFile.close();
     }
-    outFile.close();
 
+    // Save hourly rates
     outFile.open("hourlyRates.dat");
-    for (const auto& type : hourlyRates) {
-        for (const auto& rate : type.second) {
-            outFile << type.first << " " << rate.first << " " << rate.second << "\n";
+    if (outFile) {
+        for (const auto& type : hourlyRates) {
+            for (const auto& rate : type.second) {
+                outFile << type.first << " " << rate.first << " " << rate.second << "\n";
+            }
         }
+        outFile.close();
     }
-    outFile.close();
 }
 
+
 void loadData() {
-    ifstream inFile("adminPassword.dat");
+    ifstream inFile;
+
+    // Load admin password
+    inFile.open("adminPassword.dat");
     if (inFile) {
         inFile >> adminPassword;
         inFile.close();
     }
+    else {
+        adminPassword = ""; // If file doesn't exist, set default value
+    }
 
+    // Load parking lots
     inFile.open("parkingLots.dat");
     if (inFile) {
         string floor, id, type, vehicleType, plateNumber;
@@ -554,6 +594,7 @@ void loadData() {
         inFile.close();
     }
 
+    // Load customers
     inFile.open("customers.dat");
     if (inFile) {
         string plateNumber, parkingType, vehicleType;
@@ -568,20 +609,27 @@ void loadData() {
         inFile.close();
     }
 
+    // Load parkingTypeToVehicleTypes
     inFile.open("parkingTypeToVehicleTypes.dat");
     if (inFile) {
         string parkingType, vehicleType;
         while (inFile >> parkingType) {
             set<string> vehicleTypes;
-            while (inFile >> vehicleType) {
-                if (vehicleType == "\n") break;
+            while (inFile.peek() != '\n' && inFile >> vehicleType) {
                 vehicleTypes.insert(vehicleType);
             }
             parkingTypeToVehicleTypes[parkingType] = vehicleTypes;
         }
         inFile.close();
     }
+    else {
+        // Initialize default parking types and vehicle types if file doesn't exist
+        parkingTypeToVehicleTypes["Compact"] = { "Car", "Van" };
+        parkingTypeToVehicleTypes["Handicapped"] = { "Truck", "Otto" };
+        parkingTypeToVehicleTypes["Motorcycle"] = { "Motorcycle" };
+    }
 
+    // Load hourly rates
     inFile.open("hourlyRates.dat");
     if (inFile) {
         string parkingType, vehicleType;
@@ -591,7 +639,16 @@ void loadData() {
         }
         inFile.close();
     }
+    else {
+        // Initialize default hourly rates if file doesn't exist
+        hourlyRates["Compact"]["Car"] = 2.0;
+        hourlyRates["Compact"]["Van"] = 2.5;
+        hourlyRates["Handicapped"]["Truck"] = 3.0;
+        hourlyRates["Handicapped"]["Otto"] = 3.5;
+        hourlyRates["Motorcycle"]["Motorcycle"] = 1.5;
+    }
 }
+
 
 void clearScreen() {
     system("cls");
@@ -604,12 +661,14 @@ string generateParkingSpotId(const string& floor, int index) {
 void displayVisualParkingStatus(const string& floor) {
     cout << "Floor: " << floor << "\n";
     const auto& spots = parkingLots[floor];
+    const int columnWidth = 20; // Set the width for each column
+
     for (size_t i = 0; i < spots.size(); ++i) {
         if (i % 5 == 0 && i != 0) cout << "\n"; // 每5个车位换一行
         const auto& spot = spots[i];
         string spotStatus = spot.isOccupied ? "[X]" : "[ ]";
-        cout << spotStatus << spot.id << "(" << spot.type << ") ";
+        // Format the output for each spot to ensure alignment
+        cout << left << setw(columnWidth) << (spotStatus + spot.id + "(" + spot.type + ")");
     }
     cout << "\n";
 }
-
