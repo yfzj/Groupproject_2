@@ -6,11 +6,13 @@
 #include <map>
 #include <set>
 #include <cstdlib>  // For system("clear")
+#include <algorithm> // For find_if
 
 using namespace std;
 
 // Structure definitions
 struct ParkingSpot {
+    string id;
     string type;
     bool isOccupied;
     string vehicleType;
@@ -55,6 +57,8 @@ void saveData();
 void loadData();
 void modifyParkingTypeVehicleTypes();
 void clearScreen();
+string generateParkingSpotId(const string& floor, int index);
+void displayVisualParkingStatus(const string& floor);
 
 int main() {
     initializeSystem();
@@ -167,11 +171,7 @@ void customerLogin() {
 void displayParkingStatus() {
     clearScreen();
     for (const auto& floor : parkingLots) {
-        cout << "Floor: " << floor.first << "\n";
-        for (size_t i = 0; i < floor.second.size(); ++i) {
-            const auto& spot = floor.second[i];
-            cout << "Index: " << i << ", Type: " << spot.type << ", Occupied: " << (spot.isOccupied ? "Yes" : "No") << "\n";
-        }
+        displayVisualParkingStatus(floor.first);
     }
     cout << "Press any key to continue...";
     cin.ignore();
@@ -195,8 +195,23 @@ void addParkingSpot() {
     }
     newSpot.isOccupied = false;
 
+    auto& spots = parkingLots[floor];
     for (int i = 0; i < count; ++i) {
-        parkingLots[floor].push_back(newSpot);
+        auto it = find_if(spots.begin(), spots.end(), [](const ParkingSpot& spot) {
+            return spot.type.empty(); // Find the first empty spot
+            });
+        if (it != spots.end()) {
+            it->type = newSpot.type;
+            it->isOccupied = newSpot.isOccupied;
+            it->vehicleType = newSpot.vehicleType;
+            it->plateNumber = newSpot.plateNumber;
+            it->startTime = newSpot.startTime;
+            it->entrance = newSpot.entrance;
+        }
+        else {
+            newSpot.id = generateParkingSpotId(floor, spots.size());
+            spots.push_back(newSpot);
+        }
     }
     cout << "Parking spots added successfully\n";
     cout << "Press any key to continue...";
@@ -206,36 +221,46 @@ void addParkingSpot() {
 
 void modifyParkingSpot() {
     string floor, newType, newVehicleType;
-    int index;
+    string spotId;
     cout << "Enter floor (e.g., B1, B2): ";
     cin >> floor;
-    cout << "Enter index of the spot to modify: ";
-    cin >> index;
+    cout << "Enter ID of the spot to modify: ";
+    cin >> spotId;
 
-    if (parkingLots.find(floor) != parkingLots.end() && index >= 0 && index < parkingLots[floor].size()) {
-        auto& spot = parkingLots[floor][index];
-        cout << "Current Type: " << spot.type << ", Is Occupied: " << (spot.isOccupied ? "Yes" : "No") << "\n";
-        cout << "Enter new type (Compact, Handicapped, Motorcycle): ";
-        cin >> newType;
+    if (parkingLots.find(floor) != parkingLots.end()) {
+        auto& spots = parkingLots[floor];
+        auto it = find_if(spots.begin(), spots.end(), [&spotId](const ParkingSpot& spot) {
+            return spot.id == spotId;
+            });
 
-        if (parkingTypeToVehicleTypes.find(newType) != parkingTypeToVehicleTypes.end()) {
-            spot.type = newType;
-            cout << "Enter new vehicle type: ";
-            cin >> newVehicleType;
-            if (parkingTypeToVehicleTypes[newType].find(newVehicleType) != parkingTypeToVehicleTypes[newType].end()) {
-                spot.vehicleType = newVehicleType;
-                cout << "Parking spot modified successfully\n";
+        if (it != spots.end()) {
+            auto& spot = *it;
+            cout << "Current Type: " << spot.type << ", Is Occupied: " << (spot.isOccupied ? "Yes" : "No") << "\n";
+            cout << "Enter new type (Compact, Handicapped, Motorcycle): ";
+            cin >> newType;
+
+            if (parkingTypeToVehicleTypes.find(newType) != parkingTypeToVehicleTypes.end()) {
+                spot.type = newType;
+                cout << "Enter new vehicle type: ";
+                cin >> newVehicleType;
+                if (parkingTypeToVehicleTypes[newType].find(newVehicleType) != parkingTypeToVehicleTypes[newType].end()) {
+                    spot.vehicleType = newVehicleType;
+                    cout << "Parking spot modified successfully\n";
+                }
+                else {
+                    cout << "Invalid vehicle type for the selected parking type\n";
+                }
             }
             else {
-                cout << "Invalid vehicle type for the selected parking type\n";
+                cout << "Invalid parking type\n";
             }
         }
         else {
-            cout << "Invalid parking type\n";
+            cout << "Invalid spot ID\n";
         }
     }
     else {
-        cout << "Invalid floor or index\n";
+        cout << "Invalid floor\n";
     }
     cout << "Press any key to continue...";
     cin.ignore();
@@ -244,18 +269,28 @@ void modifyParkingSpot() {
 
 void deleteParkingSpot() {
     string floor;
-    int index;
+    string spotId;
     cout << "Enter floor (e.g., B1, B2): ";
     cin >> floor;
-    cout << "Enter index of the spot to delete: ";
-    cin >> index;
+    cout << "Enter ID of the spot to delete: ";
+    cin >> spotId;
 
-    if (parkingLots.find(floor) != parkingLots.end() && index >= 0 && index < parkingLots[floor].size()) {
-        parkingLots[floor].erase(parkingLots[floor].begin() + index);
-        cout << "Parking spot deleted successfully\n";
+    if (parkingLots.find(floor) != parkingLots.end()) {
+        auto& spots = parkingLots[floor];
+        auto it = find_if(spots.begin(), spots.end(), [&spotId](const ParkingSpot& spot) {
+            return spot.id == spotId;
+            });
+
+        if (it != spots.end()) {
+            it->type.clear(); // Clear the type to mark it as deleted
+            cout << "Parking spot deleted successfully\n";
+        }
+        else {
+            cout << "Invalid spot ID\n";
+        }
     }
     else {
-        cout << "Invalid floor or index\n";
+        cout << "Invalid floor\n";
     }
     cout << "Press any key to continue...";
     cin.ignore();
@@ -301,10 +336,9 @@ void searchAvailableSpots() {
 
     for (const auto& floor : parkingLots) {
         cout << "Floor: " << floor.first << "\n";
-        for (size_t i = 0; i < floor.second.size(); ++i) {
-            const auto& spot = floor.second[i];
+        for (const auto& spot : floor.second) {
             if (!spot.isOccupied && parkingTypeToVehicleTypes[spot.type].find(vehicleType) != parkingTypeToVehicleTypes[spot.type].end()) {
-                cout << "Index: " << i << ", Type: " << spot.type << ", Available\n";
+                cout << "ID: " << spot.id << ", Type: " << spot.type << ", Available\n";
             }
         }
     }
@@ -320,11 +354,12 @@ void rentParkingSpot() {
     cin >> plateNumber;
 
     string floor, type;
+    string spotId;
     int entrance;
     cout << "Enter floor (e.g., B1, B2): ";
     cin >> floor;
-    cout << "Enter spot type (Compact, Handicapped, Motorcycle): ";
-    cin >> type;
+    cout << "Enter spot ID: ";
+    cin >> spotId;
     cout << "Enter entrance (1 or 2): ";
     cin >> entrance;
 
@@ -342,25 +377,26 @@ void rentParkingSpot() {
         return;
     }
 
-    for (auto& spot : parkingLots[floor]) {
-        if (!spot.isOccupied && spot.type == type) {
-            spot.isOccupied = true;
-            spot.vehicleType = vehicleType;
-            spot.plateNumber = plateNumber;
-            spot.startTime = time(nullptr);
-            spot.entrance = entrance;
-            customers[plateNumber].startTime = spot.startTime;
-            customers[plateNumber].entrance = entrance;
-            customers[plateNumber].parkingType = type;
-            customers[plateNumber].vehicleType = vehicleType;
-            cout << "Parking spot rented successfully\n";
-            cout << "Press any key to continue...";
-            cin.ignore();
-            cin.get();
-            return;
-        }
+    auto& spots = parkingLots[floor];
+    auto it = find_if(spots.begin(), spots.end(), [&spotId](const ParkingSpot& spot) {
+        return spot.id == spotId;
+        });
+
+    if (it != spots.end() && !it->isOccupied && it->type == type) {
+        it->isOccupied = true;
+        it->vehicleType = vehicleType;
+        it->plateNumber = plateNumber;
+        it->startTime = time(nullptr);
+        it->entrance = entrance;
+        customers[plateNumber].startTime = it->startTime;
+        customers[plateNumber].entrance = entrance;
+        customers[plateNumber].parkingType = type;
+        customers[plateNumber].vehicleType = vehicleType;
+        cout << "Parking spot rented successfully\n";
     }
-    cout << "No available spots of the requested type\n";
+    else {
+        cout << "No available spots of the requested type\n";
+    }
     cout << "Press any key to continue...";
     cin.ignore();
     cin.get();
@@ -452,7 +488,7 @@ void saveData() {
     for (const auto& floor : parkingLots) {
         outFile << floor.first << "\n";
         for (const auto& spot : floor.second) {
-            outFile << spot.type << " " << spot.isOccupied << " " << spot.vehicleType << " " << spot.plateNumber << " " << spot.startTime << " " << spot.entrance << "\n";
+            outFile << spot.id << " " << spot.type << " " << spot.isOccupied << " " << spot.vehicleType << " " << spot.plateNumber << " " << spot.startTime << " " << spot.entrance << "\n";
         }
     }
     outFile.close();
@@ -485,15 +521,15 @@ void saveData() {
 void loadData() {
     ifstream inFile("parkingLots.dat");
     if (inFile) {
-        string floor, type, vehicleType, plateNumber;
+        string floor, id, type, vehicleType, plateNumber;
         bool isOccupied;
         time_t startTime;
         int entrance;
 
         while (inFile >> floor) {
             vector<ParkingSpot> spots;
-            while (inFile >> type >> isOccupied >> vehicleType >> plateNumber >> startTime >> entrance) {
-                ParkingSpot spot = { type, isOccupied, vehicleType, plateNumber, startTime, entrance };
+            while (inFile >> id >> type >> isOccupied >> vehicleType >> plateNumber >> startTime >> entrance) {
+                ParkingSpot spot = { id, type, isOccupied, vehicleType, plateNumber, startTime, entrance };
                 spots.push_back(spot);
                 if (inFile.peek() == '\n') break;
             }
@@ -545,3 +581,17 @@ void clearScreen() {
     system("cls");
 }
 
+string generateParkingSpotId(const string& floor, int index) {
+    return floor + "_" + to_string(index + 1);
+}
+
+void displayVisualParkingStatus(const string& floor) {
+    cout << "Floor: " << floor << "\n";
+    const auto& spots = parkingLots[floor];
+    for (size_t i = 0; i < spots.size(); ++i) {
+        if (i % 10 == 0) cout << "\n";
+        const auto& spot = spots[i];
+        cout << (spot.isOccupied ? "[X]" : "[ ]") << spot.id << " ";
+    }
+    cout << "\n";
+}
