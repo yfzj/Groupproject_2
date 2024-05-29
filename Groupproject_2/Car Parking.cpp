@@ -166,12 +166,44 @@ void addParkingSpot() {
 }
 
 void modifyParkingSpot() {
-    // Implementation for modifying parking spot details
+    string floor, type, newType;
+    int index;
+    cout << "Enter floor (e.g., B1, B2): ";
+    cin >> floor;
+    cout << "Enter index of the spot to modify: ";
+    cin >> index;
+
+    if (parkingLots.find(floor) != parkingLots.end() && index >= 0 && index < parkingLots[floor].size()) {
+        cout << "Current Type: " << parkingLots[floor][index].type << ", Is Occupied: " << (parkingLots[floor][index].isOccupied ? "Yes" : "No") << "\n";
+        cout << "Enter new type (Compact, Handicapped, Motorcycle): ";
+        cin >> newType;
+
+        // Update the type
+        parkingLots[floor][index].type = newType;
+        cout << "Parking spot modified successfully\n";
+    }
+    else {
+        cout << "Invalid floor or index\n";
+    }
 }
 
 void deleteParkingSpot() {
-    // Implementation for deleting a parking spot
+    string floor;
+    int index;
+    cout << "Enter floor (e.g., B1, B2): ";
+    cin >> floor;
+    cout << "Enter index of the spot to delete: ";
+    cin >> index;
+
+    if (parkingLots.find(floor) != parkingLots.end() && index >= 0 && index < parkingLots[floor].size()) {
+        parkingLots[floor].erase(parkingLots[floor].begin() + index);
+        cout << "Parking spot deleted successfully\n";
+    }
+    else {
+        cout << "Invalid floor or index\n";
+    }
 }
+
 
 void setHourlyRate() {
     cout << "Enter hourly rate for Compact spots: ";
