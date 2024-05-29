@@ -221,7 +221,7 @@ void addParkingSpot() {
 
 void modifyParkingSpot() {
     string floor, newType;
-    cout << "Enter floor you want modify (e.g., B1, B2): ";
+    cout << "Enter floor you want to modify (e.g., B1, B2): ";
     cin >> floor;
 
     if (parkingLots.find(floor) != parkingLots.end()) {
@@ -314,6 +314,7 @@ void modifyParkingSpot() {
 
             if (it != spots.end()) {
                 it->type = newType;
+                it->isOccupied = false;  // Set the spot to be available
                 cout << "Parking spot " << id << " modified successfully\n";
             }
             else {
@@ -331,6 +332,7 @@ void modifyParkingSpot() {
     cin.ignore();
     cin.get();
 }
+
 
 void deleteParkingSpot() {
     string floor;
