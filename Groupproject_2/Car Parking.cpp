@@ -64,6 +64,11 @@ void modifyParkingTypeVehicleTypes();
 void clearScreen();
 string generateParkingSpotId(const string& floor, int index);
 void displayVisualParkingStatus(const string& floor);
+void clearParkingSpotOccupation();
+void manageCustomerInformation();
+void viewCustomerInformation();
+void addCustomerInformation();
+void deleteCustomerInformation();
 
 int main() {
     initializeSystem();
@@ -111,6 +116,8 @@ void adminLogin() {
             cout << "6. Set Daily Max Rate\n";
             cout << "7. Modify Parking Types and Vehicle Types\n";
             cout << "8. Search Available Spots\n";
+            cout << "9. Clear Parking Spot Occupation\n";
+            cout << "10. Manage Customer Information\n";
             cout << "0. Exit\n";
             cout << "Please choose: ";
             cin >> choice;
@@ -123,13 +130,21 @@ void adminLogin() {
             case 6: setDailyMaxRate(); break;
             case 7: modifyParkingTypeVehicleTypes(); break;
             case 8: searchAvailableSpots(); break;
+            case 9: clearParkingSpotOccupation(); break;
+            case 10: manageCustomerInformation(); break;
+            case 0: break;
+            default: cout << "Invalid choice\n";
             }
         } while (choice != 0);
     }
     else {
         cout << "Incorrect password\n";
+        cout << "Press any key to continue...";
+        cin.ignore();
+        cin.get();
     }
 }
+
 
 void customerLogin() {
     cout << "Please enter your plate number: ";
@@ -333,7 +348,6 @@ void modifyParkingSpot() {
     cin.get();
 }
 
-
 void deleteParkingSpot() {
     string floor;
     cout << "Enter floor you want to delete spots from (e.g., B1, B2): ";
@@ -530,6 +544,262 @@ void modifyParkingTypeVehicleTypes() {
     cin.ignore();
     cin.get();
 }
+
+void clearParkingSpotOccupation() {
+    string floor, spotId;
+    cout << "Enter floor (e.g., B1, B2): ";
+    cin >> floor;
+
+    if (parkingLots.find(floor) != parkingLots.end()) {
+        auto& spots = parkingLots[floor];
+
+        // 显示当前被占用的停车位信息
+        cout << "Currently occupied spots on " << floor << ":\n";
+        for (const auto& spot : spots) {
+            if (spot.isOccupied) {
+                cout << "ID: " << spot.id << ", Vehicle Type: " << spot.vehicleType << ", Plate Number: " << spot.plateNumber << "\n";
+            }
+        }
+
+        cout << "Choose clearing type:\n";
+        cout << "1. Clear multiple individual spots\n";
+        cout << "2. Clear a range of spots\n";
+        int choice;
+        cin >> choice;
+
+        vector<string> idsToClear;
+
+        if (choice == 1) {
+            // Input for individual spot IDs to clear
+            string spotIds;
+            cout << "Enter IDs of the spots to clear (separated by spaces): \n";
+            cout << "(Such as B1_1 B1_2 to clear the spots 1, 2 from B1)\n";
+            cin.ignore(); // Ignore any leftover newline character
+            getline(cin, spotIds);
+            stringstream ss(spotIds);
+            string spotId;
+            while (ss >> spotId) {
+                idsToClear.push_back(spotId);
+            }
+        }
+        else if (choice == 2) {
+            // Input for range of spot IDs to clear
+            string startId, endId;
+            cout << "Enter the start ID of the range to clear (e.g., B1_1): ";
+            cin >> startId;
+            cout << "Enter the end ID of the range to clear (e.g., B1_10): ";
+            cin >> endId;
+
+            int startIdx = stoi(startId.substr(startId.find('_') + 1));
+            int endIdx = stoi(endId.substr(endId.find('_') + 1));
+
+            for (int i = startIdx; i <= endIdx; ++i) {
+                idsToClear.push_back(floor + "_" + to_string(i));
+            }
+        }
+        else {
+            cout << "Invalid choice\n";
+            return;
+        }
+
+        // Clear the specified spots and corresponding customer information
+        for (const string& id : idsToClear) {
+            auto it = find_if(spots.begin(), spots.end(), [&id](const ParkingSpot& spot) {
+                return spot.id == id;
+                });
+
+            if (it != spots.end()) {
+                string plateNumber = it->plateNumber;
+
+                it->isOccupied = false;
+                it->vehicleType = "";
+                it->plateNumber = "";
+                it->startTime = 0;
+                it->entrance = 0;
+                cout << "Occupation for spot " << id << " cleared successfully\n";
+
+                // Clear customer information
+                if (!plateNumber.empty() && customers.find(plateNumber) != customers.end()) {
+                    customers[plateNumber].startTime = 0;
+                    customers[plateNumber].parkingType = "";
+                    customers[plateNumber].vehicleType = "";
+                    customers[plateNumber].entrance = 0;
+                }
+            }
+            else {
+                cout << "Invalid spot ID: " << id << "\n";
+            }
+        }
+    }
+    else {
+        cout << "Invalid floor\n";
+    }
+
+    saveData();
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
+}
+
+
+void viewCustomerInformation() {
+    clearScreen();
+    cout << "Customer Information:\n";
+    time_t currentTime = time(nullptr); // 获取当前时间
+
+    for (const auto& customer : customers) {
+        cout << "Plate Number: " << customer.first << "\n";
+        cout << "Vehicle Type: " << customer.second.vehicleType << "\n";
+
+        if (customer.second.endTime == 0) {
+            double totalHours = ceil(difftime(currentTime, customer.second.startTime) / 3600.0); // 计算停车总时长（向上取整到小时）
+            double rate = hourlyRates[customer.second.parkingType]["Default"];
+            double initialPayment = totalHours * rate;
+
+            // 添加每过6小时20%的附加费
+            int sixHourIntervals = static_cast<int>(totalHours) / 6;
+            double surcharge = 0.0;
+            if (sixHourIntervals > 0) {
+                for (int i = 1; i <= sixHourIntervals; ++i) {
+                    surcharge += 6 * rate * 0.2 * i;
+                }
+                double remainingHours = totalHours - (sixHourIntervals * 6);
+                surcharge += remainingHours * rate * 0.2 * sixHourIntervals;
+            }
+
+            double payment = initialPayment + surcharge;
+            if (payment > dailyMaxRate) {
+                payment = dailyMaxRate;
+            }
+
+            cout << "Current parking duration: " << totalHours << " hours\n";
+            cout << "Current payment due: $" << fixed << setprecision(2) << payment << "\n";
+            cout << "End Time: Not yet departed\n"; // 显示未离开
+        }
+        else {
+            char buffer[26];
+            ctime_s(buffer, sizeof(buffer), &customer.second.startTime);
+            cout << "Start Time: " << buffer;
+            ctime_s(buffer, sizeof(buffer), &customer.second.endTime);
+            cout << "End Time: " << buffer;
+            cout << "Payment: $" << fixed << setprecision(2) << customer.second.payment << "\n";
+        }
+
+        cout << "--------------------------\n";
+    }
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
+}
+
+void addCustomerInformation() {
+    clearScreen();
+    Customer newCustomer;
+    cout << "Enter plate number: ";
+    cin >> newCustomer.plateNumber;
+
+    // Check for duplicate plate number
+    if (customers.find(newCustomer.plateNumber) != customers.end()) {
+        cout << "Customer with this plate number already exists.\n";
+        cout << "Press any key to continue...";
+        cin.ignore();
+        cin.get();
+        return;
+    }
+
+    cout << "Enter vehicle type: ";
+    cin >> newCustomer.vehicleType;
+
+    // Set default values for other fields
+    newCustomer.startTime = 0;
+    newCustomer.endTime = 0;
+    newCustomer.parkingType = "";
+    newCustomer.entrance = 0;
+    newCustomer.exit = 0;
+    newCustomer.payment = 0.0;
+
+    customers[newCustomer.plateNumber] = newCustomer;
+    saveData();
+    cout << "Customer information added successfully\n";
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
+}
+
+void deleteCustomerInformation() {
+    clearScreen();
+    cout << "All Customers:\n";
+    for (const auto& customer : customers) {
+        cout << "Plate Number: " << customer.first << "\n";
+        cout << "Vehicle Type: " << customer.second.vehicleType << "\n";
+        cout << "--------------------------\n";
+    }
+
+    string plateNumber;
+    cout << "Enter plate number to delete: ";
+    cin >> plateNumber;
+
+    auto it = customers.find(plateNumber);
+    if (it != customers.end()) {
+        clearScreen();  // Clear screen before displaying selected customer info
+        // Display customer information before deletion
+        cout << "Customer Information:\n";
+        cout << "Plate Number: " << it->second.plateNumber << "\n";
+        cout << "Vehicle Type: " << it->second.vehicleType << "\n";
+        cout << "--------------------------\n";
+
+        char confirm;
+        cout << "Are you sure you want to delete this customer? (y/n): ";
+        cin >> confirm;
+        if (confirm == 'y' || confirm == 'Y') {
+            customers.erase(it);
+            saveData();
+            cout << "Customer information deleted successfully\n";
+        }
+        else {
+            cout << "Deletion cancelled\n";
+        }
+    }
+    else {
+        cout << "Customer not found\n";
+    }
+
+    cout << "Press any key to continue...";
+    cin.ignore();
+    cin.get();
+}
+
+void manageCustomerInformation() {
+    int choice;
+    do {
+        clearScreen();
+        cout << "Customer Management System\n";
+        cout << "1. View Customer Information\n";
+        cout << "2. Add Customer Information\n";
+        cout << "3. Delete Customer Information\n";
+        cout << "0. Exit\n";
+        cout << "Please choose: ";
+        cin >> choice;
+
+        switch (choice) {
+        case 1:
+            viewCustomerInformation();
+            break;
+        case 2:
+            addCustomerInformation();
+            break;
+        case 3:
+            deleteCustomerInformation();
+            break;
+        case 0:
+            break;
+        default:
+            cout << "Invalid choice\n";
+        }
+    } while (choice != 0);
+}
+
+
 
 void searchAvailableSpots() {
     clearScreen();
@@ -764,7 +1034,6 @@ void settleParkingFee() {
     cin.get();
 }
 
-
 void saveData() {
     ofstream outFile("adminPassword.dat");
     if (outFile) {
@@ -823,7 +1092,6 @@ void saveData() {
         outFile.close();
     }
 }
-
 
 void loadData() {
     ifstream inFile;
@@ -920,7 +1188,6 @@ void loadData() {
         dailyMaxRate = 50.0; // Default daily maximum rate if file doesn't exist
     }
 }
-
 
 void clearScreen() {
     system("cls");
