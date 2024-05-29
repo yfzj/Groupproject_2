@@ -39,6 +39,7 @@ map<string, vector<ParkingSpot>> parkingLots;
 map<string, Customer> customers;
 map<string, set<string>> parkingTypeToVehicleTypes;
 map<string, map<string, double>> hourlyRates;
+string currentPlateNumber;
 string adminPassword;
 double dailyMaxRate = 50.0;
 
@@ -129,14 +130,13 @@ void adminLogin() {
 }
 
 void customerLogin() {
-    string plateNumber;
     cout << "Please enter your plate number: ";
-    cin >> plateNumber;
+    cin >> currentPlateNumber;
 
-    if (customers.find(plateNumber) == customers.end()) {
+    if (customers.find(currentPlateNumber) == customers.end()) {
         Customer newCustomer;
-        newCustomer.plateNumber = plateNumber;
-        customers[plateNumber] = newCustomer;
+        newCustomer.plateNumber = currentPlateNumber;
+        customers[currentPlateNumber] = newCustomer;
     }
 
     int choice;
@@ -156,6 +156,7 @@ void customerLogin() {
         }
     } while (choice != 0);
 }
+
 
 void displayParkingStatus() {
     clearScreen();
@@ -569,9 +570,6 @@ void searchAvailableSpots() {
 
 void rentParkingSpot() {
     clearScreen();
-    string plateNumber;
-    cout << "Enter your plate number: ";
-    cin >> plateNumber;
 
     string floor, type;
     string spotId;
@@ -583,17 +581,13 @@ void rentParkingSpot() {
     cout << "Enter entrance (1 or 2): ";
     cin >> entrance;
 
-    if (parkingTypeToVehicleTypes.find(type) == parkingTypeToVehicleTypes.end()) {
-        cout << "Invalid parking type\n";
-        return;
-    }
-
-    string vehicleType;
     cout << "Enter vehicle type: ";
+    string vehicleType;
     cin >> vehicleType;
 
-    if (parkingTypeToVehicleTypes[type].find(vehicleType) == parkingTypeToVehicleTypes[type].end()) {
-        cout << "Invalid vehicle type for the selected parking type\n";
+    if (parkingTypeToVehicleTypes.find(type) == parkingTypeToVehicleTypes.end() ||
+        parkingTypeToVehicleTypes[type].find(vehicleType) == parkingTypeToVehicleTypes[type].end()) {
+        cout << "Invalid parking type or vehicle type\n";
         return;
     }
 
@@ -605,43 +599,39 @@ void rentParkingSpot() {
     if (it != spots.end() && !it->isOccupied && it->type == type) {
         it->isOccupied = true;
         it->vehicleType = vehicleType;
-        it->plateNumber = plateNumber;
+        it->plateNumber = currentPlateNumber;
         it->startTime = time(nullptr);
         it->entrance = entrance;
-        customers[plateNumber].startTime = it->startTime;
-        customers[plateNumber].entrance = entrance;
-        customers[plateNumber].parkingType = type;
-        customers[plateNumber].vehicleType = vehicleType;
+        customers[currentPlateNumber].startTime = it->startTime;
+        customers[currentPlateNumber].entrance = entrance;
+        customers[currentPlateNumber].parkingType = type;
+        customers[currentPlateNumber].vehicleType = vehicleType;
         saveData();
         cout << "Parking spot rented successfully\n";
     }
     else {
         cout << "No available spots of the requested type\n";
     }
+
     cout << "Press any key to continue...";
     cin.ignore();
     cin.get();
 }
 
+
 void settleParkingFee() {
     clearScreen();
-    string plateNumber;
-    cout << "Enter your plate number: ";
-    cin >> plateNumber;
 
-    if (customers.find(plateNumber) == customers.end()) {
+    if (customers.find(currentPlateNumber) == customers.end()) {
         cout << "No such customer\n";
         return;
     }
 
-    Customer& customer = customers[plateNumber];
+    Customer& customer = customers[currentPlateNumber];
     customer.endTime = time(nullptr);
     double totalHours = difftime(customer.endTime, customer.startTime) / 3600.0;
-    double rate = hourlyRates[customer.parkingType][customer.vehicleType];
+    double rate = hourlyRates[customer.parkingType]["Default"];
     customer.payment = totalHours * rate;
-
-    int sixHourIntervals = static_cast<int>(totalHours) / 6;
-    customer.payment *= (1 + 0.2 * sixHourIntervals);
 
     if (customer.payment > dailyMaxRate) {
         customer.payment = dailyMaxRate;
@@ -652,7 +642,7 @@ void settleParkingFee() {
 
     for (auto& floor : parkingLots) {
         for (auto& spot : floor.second) {
-            if (spot.plateNumber == plateNumber) {
+            if (spot.plateNumber == currentPlateNumber) {
                 spot.isOccupied = false;
                 spot.vehicleType = "";
                 spot.plateNumber = "";
@@ -662,13 +652,14 @@ void settleParkingFee() {
         }
     }
 
-    customers.erase(plateNumber);
+    customers.erase(currentPlateNumber);
     saveData();
     cout << "Payment settled and receipt printed\n";
     cout << "Press any key to continue...";
     cin.ignore();
     cin.get();
 }
+
 
 void saveData() {
     ofstream outFile("adminPassword.dat");
