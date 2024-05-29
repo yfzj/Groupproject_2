@@ -332,18 +332,36 @@ void modifyParkingSpot() {
 
 void deleteParkingSpot() {
     string floor;
-    cout << "Enter floor you want to delete spots (e.g., B1, B2): ";
+    cout << "Enter floor you want to delete spots from (e.g., B1, B2): ";
     cin >> floor;
 
     if (parkingLots.find(floor) != parkingLots.end()) {
         auto& spots = parkingLots[floor];
 
         // Display current parking spots information on the selected floor
-        cout << "Available spots on " << floor << ":\n";
+        map<string, vector<string>> typeToSpots;
         for (const auto& spot : spots) {
-            cout << spot.id << " ";
+            if (!spot.type.empty()) {
+                typeToSpots[spot.type].push_back(spot.id);
+            }
         }
-        cout << "\n";
+
+        cout << "Current parking spots on " << floor << ":\n";
+        for (const auto& entry : typeToSpots) {
+            cout << entry.first << ": ";
+            for (size_t i = 0; i < entry.second.size(); ++i) {
+                if (i > 0 && stoi(entry.second[i].substr(entry.second[i].find('_') + 1)) != stoi(entry.second[i - 1].substr(entry.second[i - 1].find('_') + 1)) + 1) {
+                    cout << ", " << entry.second[i];
+                }
+                else if (i > 0 && (i == entry.second.size() - 1 || stoi(entry.second[i + 1].substr(entry.second[i + 1].find('_') + 1)) != stoi(entry.second[i].substr(entry.second[i].find('_') + 1)) + 1)) {
+                    cout << " to " << entry.second[i];
+                }
+                else if (i == 0) {
+                    cout << entry.second[i];
+                }
+            }
+            cout << "\n";
+        }
 
         cout << "Choose deletion type:\n";
         cout << "1. Delete multiple individual spots\n";
@@ -411,7 +429,6 @@ void deleteParkingSpot() {
     cin.ignore();
     cin.get();
 }
-
 
 void setHourlyRate() {
     string parkingType, vehicleType;
