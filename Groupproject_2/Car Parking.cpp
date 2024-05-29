@@ -5,10 +5,10 @@
 #include <ctime>
 #include <map>
 #include <set>
-#include <cstdlib>  // For system("clear")
-#include <algorithm> // For find_if
-#include <iomanip>
 #include <sstream>
+#include <algorithm>
+#include <iomanip>
+#include <limits>
 
 using namespace std;
 
@@ -38,7 +38,7 @@ struct Customer {
 map<string, vector<ParkingSpot>> parkingLots;
 map<string, Customer> customers;
 map<string, set<string>> parkingTypeToVehicleTypes;
-map<string, map<string, double>> hourlyRates; // Nested map for parkingType -> vehicleType -> rate
+map<string, map<string, double>> hourlyRates;
 string adminPassword;
 double dailyMaxRate = 50.0;
 
@@ -78,22 +78,18 @@ int main() {
         case 2: customerLogin(); break;
         }
     } while (choice != 0);
-    saveData();
     return 0;
 }
 
 void initializeSystem() {
-    // Load data from file
     loadData();
 
-    // Set admin password if not loaded
     if (adminPassword.empty()) {
         cout << "Please set the admin password: ";
         cin >> adminPassword;
+        saveData();
     }
 }
-
-
 
 void adminLogin() {
     string password;
@@ -138,7 +134,6 @@ void customerLogin() {
     cin >> plateNumber;
 
     if (customers.find(plateNumber) == customers.end()) {
-        // New customer
         Customer newCustomer;
         newCustomer.plateNumber = plateNumber;
         customers[plateNumber] = newCustomer;
@@ -193,7 +188,7 @@ void addParkingSpot() {
     int currentSize = spots.size();
     for (int i = 0; i < count; ++i) {
         auto it = find_if(spots.begin(), spots.end(), [](const ParkingSpot& spot) {
-            return spot.type.empty(); // Find the first empty spot
+            return spot.type.empty();
             });
         if (it != spots.end()) {
             it->type = newSpot.type;
@@ -202,19 +197,19 @@ void addParkingSpot() {
             it->plateNumber = newSpot.plateNumber;
             it->startTime = newSpot.startTime;
             it->entrance = newSpot.entrance;
-            it->id = generateParkingSpotId(floor, distance(spots.begin(), it)); // Update ID
+            it->id = generateParkingSpotId(floor, distance(spots.begin(), it));
         }
         else {
             newSpot.id = generateParkingSpotId(floor, currentSize + i);
             spots.push_back(newSpot);
         }
     }
+    saveData();
     cout << "Parking spots added successfully\n";
     cout << "Press any key to continue...";
     cin.ignore();
     cin.get();
 }
-
 
 void modifyParkingSpot() {
     string floor, newType, newVehicleType;
@@ -243,6 +238,7 @@ void modifyParkingSpot() {
                 if (parkingTypeToVehicleTypes[newType].find(newVehicleType) != parkingTypeToVehicleTypes[newType].end()) {
                     spot.vehicleType = newVehicleType;
                     cout << "Parking spot modified successfully\n";
+                    saveData();
                 }
                 else {
                     cout << "Invalid vehicle type for the selected parking type\n";
@@ -272,16 +268,14 @@ void deleteParkingSpot() {
     if (parkingLots.find(floor) != parkingLots.end()) {
         auto& spots = parkingLots[floor];
 
-        // Display all spot IDs for the given floor
         cout << "Available spots on " << floor << ":\n";
         for (const auto& spot : spots) {
             cout << spot.id << " ";
         }
         cout << "\n";
 
-        // Prompt for IDs to delete
         cout << "Enter IDs of the spots to delete (separated by spaces): ";
-        cin.ignore(); // Ignore the remaining newline character
+        cin.ignore();
         string line;
         getline(cin, line);
         stringstream ss(line);
@@ -292,20 +286,20 @@ void deleteParkingSpot() {
             idsToDelete.push_back(spotId);
         }
 
-        // Delete the specified spots
         for (const string& id : idsToDelete) {
             auto it = find_if(spots.begin(), spots.end(), [&id](const ParkingSpot& spot) {
                 return spot.id == id;
                 });
 
             if (it != spots.end()) {
-                it->type.clear(); // Clear the type to mark it as deleted
+                it->type.clear();
                 cout << "Parking spot " << id << " deleted successfully\n";
             }
             else {
                 cout << "Invalid spot ID: " << id << "\n";
             }
         }
+        saveData();
     }
     else {
         cout << "Invalid floor\n";
@@ -328,6 +322,7 @@ void setHourlyRate() {
     if (parkingTypeToVehicleTypes.find(parkingType) != parkingTypeToVehicleTypes.end() &&
         parkingTypeToVehicleTypes[parkingType].find(vehicleType) != parkingTypeToVehicleTypes[parkingType].end()) {
         hourlyRates[parkingType][vehicleType] = rate;
+        saveData();
         cout << "Hourly rate set successfully\n";
     }
     else {
@@ -341,6 +336,7 @@ void setHourlyRate() {
 void setDailyMaxRate() {
     cout << "Enter daily maximum rate: ";
     cin >> dailyMaxRate;
+    saveData();
     cout << "Press any key to continue...";
     cin.ignore();
     cin.get();
@@ -410,6 +406,7 @@ void rentParkingSpot() {
         customers[plateNumber].entrance = entrance;
         customers[plateNumber].parkingType = type;
         customers[plateNumber].vehicleType = vehicleType;
+        saveData();
         cout << "Parking spot rented successfully\n";
     }
     else {
@@ -437,7 +434,6 @@ void settleParkingFee() {
     double rate = hourlyRates[customer.parkingType][customer.vehicleType];
     customer.payment = totalHours * rate;
 
-    // Increase hourly rate by 20% for every 6 hours parked
     int sixHourIntervals = static_cast<int>(totalHours) / 6;
     customer.payment *= (1 + 0.2 * sixHourIntervals);
 
@@ -448,7 +444,6 @@ void settleParkingFee() {
     cout << "Total hours parked: " << totalHours << "\n";
     cout << "Total payment due: $" << customer.payment << "\n";
 
-    // Reset parking spot and customer info
     for (auto& floor : parkingLots) {
         for (auto& spot : floor.second) {
             if (spot.plateNumber == plateNumber) {
@@ -462,6 +457,7 @@ void settleParkingFee() {
     }
 
     customers.erase(plateNumber);
+    saveData();
     cout << "Payment settled and receipt printed\n";
     cout << "Press any key to continue...";
     cin.ignore();
@@ -496,20 +492,19 @@ void modifyParkingTypeVehicleTypes() {
     else {
         cout << "Invalid choice\n";
     }
+    saveData();
     cout << "Press any key to continue...";
     cin.ignore();
     cin.get();
 }
 
 void saveData() {
-    // Save admin password
     ofstream outFile("adminPassword.dat");
     if (outFile) {
         outFile << adminPassword;
         outFile.close();
     }
 
-    // Save parking lots
     outFile.open("parkingLots.dat");
     if (outFile) {
         for (const auto& floor : parkingLots) {
@@ -519,11 +514,11 @@ void saveData() {
                     << spot.vehicleType << " " << spot.plateNumber << " "
                     << spot.startTime << " " << spot.entrance << "\n";
             }
+            outFile << "#\n"; // 标记楼层结束
         }
         outFile.close();
     }
 
-    // Save customers
     outFile.open("customers.dat");
     if (outFile) {
         for (const auto& customer : customers) {
@@ -535,7 +530,6 @@ void saveData() {
         outFile.close();
     }
 
-    // Save parkingTypeToVehicleTypes
     outFile.open("parkingTypeToVehicleTypes.dat");
     if (outFile) {
         for (const auto& type : parkingTypeToVehicleTypes) {
@@ -548,7 +542,6 @@ void saveData() {
         outFile.close();
     }
 
-    // Save hourly rates
     outFile.open("hourlyRates.dat");
     if (outFile) {
         for (const auto& type : hourlyRates) {
@@ -571,23 +564,23 @@ void loadData() {
         inFile.close();
     }
     else {
-        adminPassword = ""; // If file doesn't exist, set default value
+        adminPassword = "";
     }
 
     // Load parking lots
     inFile.open("parkingLots.dat");
     if (inFile) {
-        string floor, id, type, vehicleType, plateNumber;
-        bool isOccupied;
-        time_t startTime;
-        int entrance;
-
-        while (inFile >> floor) {
+        string floor;
+        while (getline(inFile, floor)) {
             vector<ParkingSpot> spots;
-            while (inFile >> id >> type >> isOccupied >> vehicleType >> plateNumber >> startTime >> entrance) {
-                ParkingSpot spot = { id, type, isOccupied, vehicleType, plateNumber, startTime, entrance };
+            string line;
+            while (getline(inFile, line)) {
+                if (line == "#") break; // 结束当前楼层的读取
+                istringstream iss(line);
+                ParkingSpot spot;
+                iss >> spot.id >> spot.type >> spot.isOccupied >> spot.vehicleType
+                    >> spot.plateNumber >> spot.startTime >> spot.entrance;
                 spots.push_back(spot);
-                if (inFile.peek() == '\n') break;
             }
             parkingLots[floor] = spots;
         }
@@ -601,7 +594,6 @@ void loadData() {
         time_t startTime, endTime;
         int entrance, exit;
         double payment;
-
         while (inFile >> plateNumber >> startTime >> endTime >> parkingType >> vehicleType >> entrance >> exit >> payment) {
             Customer customer = { plateNumber, startTime, endTime, parkingType, vehicleType, entrance, exit, payment };
             customers[plateNumber] = customer;
@@ -619,11 +611,12 @@ void loadData() {
                 vehicleTypes.insert(vehicleType);
             }
             parkingTypeToVehicleTypes[parkingType] = vehicleTypes;
+            inFile.ignore(numeric_limits<streamsize>::max(), '\n'); // 忽略行末的换行符
         }
         inFile.close();
     }
     else {
-        // Initialize default parking types and vehicle types if file doesn't exist
+        // 初始化默认值
         parkingTypeToVehicleTypes["Compact"] = { "Car", "Van" };
         parkingTypeToVehicleTypes["Handicapped"] = { "Truck", "Otto" };
         parkingTypeToVehicleTypes["Motorcycle"] = { "Motorcycle" };
@@ -640,7 +633,7 @@ void loadData() {
         inFile.close();
     }
     else {
-        // Initialize default hourly rates if file doesn't exist
+        // 初始化默认值
         hourlyRates["Compact"]["Car"] = 2.0;
         hourlyRates["Compact"]["Van"] = 2.5;
         hourlyRates["Handicapped"]["Truck"] = 3.0;
@@ -648,6 +641,7 @@ void loadData() {
         hourlyRates["Motorcycle"]["Motorcycle"] = 1.5;
     }
 }
+
 
 
 void clearScreen() {
@@ -661,13 +655,12 @@ string generateParkingSpotId(const string& floor, int index) {
 void displayVisualParkingStatus(const string& floor) {
     cout << "Floor: " << floor << "\n";
     const auto& spots = parkingLots[floor];
-    const int columnWidth = 20; // Set the width for each column
+    const int columnWidth = 20;
 
     for (size_t i = 0; i < spots.size(); ++i) {
-        if (i % 5 == 0 && i != 0) cout << "\n"; // 每5个车位换一行
+        if (i % 5 == 0 && i != 0) cout << "\n";
         const auto& spot = spots[i];
         string spotStatus = spot.isOccupied ? "[X]" : "[ ]";
-        // Format the output for each spot to ensure alignment
         cout << left << setw(columnWidth) << (spotStatus + spot.id + "(" + spot.type + ")");
     }
     cout << "\n";
