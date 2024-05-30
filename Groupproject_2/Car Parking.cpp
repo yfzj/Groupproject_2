@@ -13,7 +13,7 @@
 #include <chrono>
 #include <cctype> // To use isdigit function
 
-using namespace std;
+    using namespace std;
 
 // Structure definitions
 struct ParkingSpot {
@@ -47,29 +47,78 @@ string adminPassword;
 double dailyMaxRate = 50.0;
 
 // Function declarations
+// Initializes the system by loading data and setting the admin password if it is not set.
 void initializeSystem();
+
+// Prompts the admin for a password and, if correct, allows access to the admin functions.
 void adminLogin();
+
+// Allows customers to log in with their plate number and access customer functions.
 void customerLogin();
+
+// Displays the current parking status of all floors.
 void displayParkingStatus();
+
+// Adds a specified number of parking spots to a given floor.
 void addParkingSpot();
+
+// Modifies the type of existing parking spots on a given floor.
 void modifyParkingSpot();
+
+// Deletes specified parking spots from a given floor and marks them as unavailable.
 void deleteParkingSpot();
+
+// Sets the hourly rate for a specified parking type.
 void setHourlyRate();
+
+// Sets the maximum daily rate for parking.
 void setDailyMaxRate();
+
+// Searches and displays available parking spots based on vehicle type.
 void searchAvailableSpots();
+
+// Allows customers to rent a parking spot by specifying the floor, spot ID, and vehicle type.
 void rentParkingSpot();
+
+// Calculates and settles the parking fee for a customer based on the time parked.
 void settleParkingFee();
+
+// Saves all current data (admin password, parking lots, customers, parking type to vehicle types, hourly rates, and daily max rate) to files.
 void saveData();
+
+// Loads data (admin password, parking lots, customers, parking type to vehicle types, hourly rates, and daily max rate) from files.
 void loadData();
+
+// Modifies the vehicle types associated with a parking type by adding or removing vehicle types.
 void modifyParkingTypeVehicleTypes();
+
+// Clears the console screen.
 void clearScreen();
+
+// Generates a unique parking spot ID based on the floor and index.
 string generateParkingSpotId(const string& floor, int index);
+
+// Displays a visual representation of the parking status on a specified floor.
 void displayVisualParkingStatus(const string& floor);
+
+// Clears the occupation status of a specified parking spot and removes associated customer information.
 void clearParkingSpotOccupation();
+
+// Manages customer information, including viewing, adding, and deleting customer records.
 void manageCustomerInformation();
+
+// Displays information about all customers, including plate number, vehicle type, entrance, and estimated payment if not yet departed.
 void viewCustomerInformation();
+
+// Adds a new customer information record, including plate number and vehicle type.
 void addCustomerInformation();
+
+// Deletes a customer information record after displaying the information and confirming the deletion.
 void deleteCustomerInformation();
+
+
+
+
 
 int main() {
     initializeSystem();
@@ -82,40 +131,40 @@ int main() {
         cout << "0. Exit\n";
         cout << "Please choose: ";
         cin >> choice;
-        while (cin.fail() || (choice < 0 || choice > 2)) {
+        while (cin.fail() || (choice < 0 || choice > 2)) {// Validate the user's input
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "Invalid input. Please enter a number between 0 and 2: ";
             cin >> choice;
         }
-        switch (choice) {
-        case 1: adminLogin(); break;
-        case 2: customerLogin(); break;
+        switch (choice) {// Perform actions based on the user's choice
+        case 1: adminLogin(); break;// Call the adminLogin function
+        case 2: customerLogin(); break;// Call the customerLogin function
         }
-    } while (choice != 0);
+    } while (choice != 0);// Continue the loop until the user chooses to exit
     return 0;
 }
 
 void initializeSystem() {
-    loadData();
+    loadData();// Load data from storage
 
     if (adminPassword.empty()) {
         cout << "Please set the admin password: ";
-        cin >> adminPassword;
+        cin >> adminPassword;// Get the admin password from the user
         while (cin.fail() || adminPassword.empty()) {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "Invalid input. Please enter a non-empty password: ";
             cin >> adminPassword;
         }
-        saveData();
+        saveData();// Save the updated data
     }
 }
 
 void adminLogin() {
     string password;
     cout << "Please enter the admin password: ";
-    cin >> password;
+    cin >> password;// Get the admin password from the user
     if (password == adminPassword) {
         int choice;
         do {
@@ -134,13 +183,13 @@ void adminLogin() {
             cout << "0. Exit\n";
             cout << "Please choose: ";
             cin >> choice;
-            while (cin.fail() || (choice < 0 || choice > 10)) {
+            while (cin.fail() || (choice < 0 || choice > 10)) { // Validate the user's input
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 cout << "Invalid input. Please enter a number between 0 and 10: ";
                 cin >> choice;
             }
-            switch (choice) {
+            switch (choice) {  // Perform actions based on the admin's choice
             case 1: displayParkingStatus(); break;
             case 2: addParkingSpot(); break;
             case 3: modifyParkingSpot(); break;
@@ -154,7 +203,7 @@ void adminLogin() {
             case 0: break;
             default: cout << "Invalid choice\n";
             }
-        } while (choice != 0);
+        } while (choice != 0);// Continue the loop until the admin chooses to exit
     }
     else {
         cout << "Incorrect password\n";
@@ -166,9 +215,9 @@ void adminLogin() {
 
 void customerLogin() {
     cout << "Please enter your plate number: ";
-    cin >> currentPlateNumber;
+    cin >> currentPlateNumber;// Get the customer's plate number
 
-    if (customers.find(currentPlateNumber) == customers.end()) {
+    if (customers.find(currentPlateNumber) == customers.end()) { // Check if the customer is new
         Customer newCustomer;
         newCustomer.plateNumber = currentPlateNumber;
         customers[currentPlateNumber] = newCustomer;
@@ -184,23 +233,23 @@ void customerLogin() {
         cout << "0. Exit\n";
         cout << "Please choose: ";
         cin >> choice;
-        while (cin.fail() || (choice < 0 || choice > 3)) {
+        while (cin.fail() || (choice < 0 || choice > 3)) {  // Validate the user's input
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "Invalid input. Please enter a number between 0 and 3: ";
             cin >> choice;
         }
-        switch (choice) {
+        switch (choice) { // Perform actions based on the customer's choice
         case 1: searchAvailableSpots(); break;
         case 2: rentParkingSpot(); break;
         case 3: settleParkingFee(); break;
         case 0: break;
         default: cout << "Invalid choice\n";
         }
-    } while (choice != 0);
+    } while (choice != 0);// Continue the loop until the customer chooses to exit
 }
 
-void displayParkingStatus() {
+void displayParkingStatus() {//display parking status
     clearScreen();
     for (const auto& floor : parkingLots) {
         displayVisualParkingStatus(floor.first);
@@ -211,14 +260,15 @@ void displayParkingStatus() {
 }
 
 
-void addParkingSpot() {
+void addParkingSpot() {// Function to add parking spots
+    clearScreen();
     string floor;
     int count;
-    cout << "Enter floor (e.g., B1, B2): ";
+    cout << "Enter floor (e.g., B1, B2): ";//let user choose a floor to add
     cin >> floor;
     cin.ignore();
     cout << "Enter number of spots to add: ";
-    cin >> count;
+    cin >> count;//get the number of spots that user want to add
     while (cin.fail() || count <= 0) {
         cin.clear();
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -226,7 +276,7 @@ void addParkingSpot() {
         cin >> count;
     }
 
-    // Display current parking types for user to choose from
+
     cout << "Available parking types: ";
     for (const auto& type : parkingTypeToVehicleTypes) {
         cout << type.first << " ";
@@ -234,7 +284,7 @@ void addParkingSpot() {
     cout << "\nEnter spot type: ";
 
     ParkingSpot newSpot;
-    cin >> newSpot.type;
+    cin >> newSpot.type;//get the name of new spot type
     while (parkingTypeToVehicleTypes.find(newSpot.type) == parkingTypeToVehicleTypes.end()) {
         cout << "Invalid parking type. Please enter a valid parking type: ";
         cin >> newSpot.type;
@@ -247,7 +297,7 @@ void addParkingSpot() {
         auto it = find_if(spots.begin(), spots.end(), [](const ParkingSpot& spot) {
             return spot.type.empty();
             });
-        if (it != spots.end()) {
+        if (it != spots.end()) {// Update the existing spot with new information
             it->type = newSpot.type;
             it->isOccupied = newSpot.isOccupied;
             it->vehicleType = newSpot.vehicleType;
@@ -261,7 +311,7 @@ void addParkingSpot() {
             spots.push_back(newSpot);
         }
     }
-    saveData();
+    saveData();// Save the updated parking data
     cout << "Parking spots added successfully\n";
     cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -269,9 +319,10 @@ void addParkingSpot() {
 }
 
 void modifyParkingSpot() {
+    clearScreen();
     string floor, newType;
     cout << "Enter floor you want to modify (e.g., B1, B2): ";
-    cin >> floor;
+    cin >> floor;//get the floor information user want to modify
 
     if (parkingLots.find(floor) != parkingLots.end()) {
         auto& spots = parkingLots[floor];
@@ -305,8 +356,8 @@ void modifyParkingSpot() {
         cout << "1. Modify multiple individual spots\n";
         cout << "2. Modify a range of spots\n";
         int choice;
-        cin >> choice;
-        while (cin.fail() || (choice < 1 || choice > 2)) {
+        cin >> choice;//get choice from user
+        while (cin.fail() || (choice < 1 || choice > 2)) {//avoid invalid input 
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "Invalid input. Please enter 1 or 2: ";
@@ -373,7 +424,7 @@ void modifyParkingSpot() {
             }
         }
 
-        saveData();
+        saveData();// save new parking spots data
     }
     else {
         cout << "Invalid floor\n";
@@ -385,6 +436,7 @@ void modifyParkingSpot() {
 }
 
 void deleteParkingSpot() {
+    clearScreen();
     string floor;
     cout << "Enter floor you want to delete spots from (e.g., B1, B2): ";
     cin >> floor;
@@ -496,6 +548,7 @@ void deleteParkingSpot() {
 
 
 void setHourlyRate() {
+    clearScreen();
     string parkingType;
     double rate;
 
@@ -540,6 +593,7 @@ void setHourlyRate() {
 
 
 void setDailyMaxRate() {
+    clearScreen();
     // Display current daily maximum rate
     cout << "Current daily maximum rate: $" << dailyMaxRate << "\n";
 
@@ -610,6 +664,7 @@ void modifyParkingTypeVehicleTypes() {
 
 
 void clearParkingSpotOccupation() {
+    clearScreen();
     string floor, spotId;
     cout << "Enter floor (e.g., B1, B2): ";
     cin >> floor;
@@ -982,7 +1037,7 @@ void searchAvailableSpots() {
     string vehicleType;
     cin >> vehicleType;
 
-    while (availableVehicleTypes.find(vehicleType) == availableVehicleTypes.end()) {
+    while (availableVehicleTypes.find(vehicleType) == availableVehicleTypes.end()) {// aviod invalid vehicle type input 
         cout << "Invalid vehicle type. Please enter a valid vehicle type: ";
         cin >> vehicleType;
     }
@@ -1137,13 +1192,13 @@ void settleParkingFee() {
         customer.payment = dailyMaxRate;
     }
 
-    cout << "Total hours parked: " << totalHours << "\n";
-    cout << "Total payment due: $" << fixed << setprecision(2) << customer.payment << "\n";
+    cout << "Total hours parked: " << totalHours << "\n";//display total hour that customer parking
+    cout << "Total payment due: $" << fixed << setprecision(2) << customer.payment << "\n";//display total fee
 
     char choice;
     cout << "Do you want to proceed with the payment? (y/n): ";
     cin >> choice;
-    while (choice != 'y' && choice != 'Y' && choice != 'n' && choice != 'N') {
+    while (choice != 'y' && choice != 'Y' && choice != 'n' && choice != 'N') {// avoid invlid input 
         cout << "Invalid input. Please enter 'y' or 'n': ";
         cin >> choice;
     }
@@ -1157,12 +1212,12 @@ void settleParkingFee() {
     string cardNumber, password;
     while (true) {
         cout << "Enter your 10-digit card number: ";
-        cin >> cardNumber;
+        cin >> cardNumber;// get card information from user
         cout << "Enter your 6-digit password: ";
         cin >> password;
 
-        if (cardNumber.length() == 10 && all_of(cardNumber.begin(), cardNumber.end(), ::isdigit) &&
-            password.length() == 6 && all_of(password.begin(), password.end(), ::isdigit)) {
+        if (cardNumber.length() == 10 && all_of(cardNumber.begin(), cardNumber.end(), ::isdigit) &&// card number has a length limit,card number is 10
+            password.length() == 6 && all_of(password.begin(), password.end(), ::isdigit)) {//password has 6 number
             cout << "Payment processed successfully. Receipt is being printed...\n";
             break;
         }
@@ -1174,7 +1229,7 @@ void settleParkingFee() {
     int exit;
     while (true) {
         cout << "Enter exit number you will leave from (1 or 2): ";
-        cin >> exit;
+        cin >> exit;// get exit information from customer 
         while (cin.fail() || (exit < 1 || exit > 2)) {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -1204,7 +1259,7 @@ void settleParkingFee() {
     }
 
     customers.erase(currentPlateNumber);
-    saveData();
+    saveData();// save custmomer information like parking time and parking fee
     cout << "Payment settled and receipt printed\n";
     cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -1213,7 +1268,7 @@ void settleParkingFee() {
 
 
 void saveData() {
-    ofstream outFile("adminPassword.dat");
+    ofstream outFile("adminPassword.dat"); // Save admin password to adminPassword.dat
     if (outFile.is_open()) {
         outFile << adminPassword;
         outFile.close();
@@ -1222,14 +1277,14 @@ void saveData() {
         cerr << "Error: Unable to open adminPassword.dat for writing\n";
     }
 
-    outFile.open("parkingLots.dat");
+    outFile.open("parkingLots.dat");// Save parking lot data to parkingLots.dat
     if (outFile.is_open()) {
         for (const auto& floor : parkingLots) {
-            outFile << floor.first << "\n";
+            outFile << floor.first << "\n";// Write the floor number
             for (const auto& spot : floor.second) {
                 outFile << spot.id << " " << spot.type << " " << spot.isOccupied << " "
                     << spot.vehicleType << " " << spot.plateNumber << " "
-                    << spot.startTime << " " << spot.entrance << "\n";
+                    << spot.startTime << " " << spot.entrance << "\n";// Write spot details
             }
             outFile << "#\n"; // Mark end of floor spots
         }
@@ -1239,13 +1294,13 @@ void saveData() {
         cerr << "Error: Unable to open parkingLots.dat for writing\n";
     }
 
-    outFile.open("customers.dat");
+    outFile.open("customers.dat");// Save customer data to customers.dat
     if (outFile.is_open()) {
         for (const auto& customer : customers) {
             outFile << customer.first << " " << customer.second.startTime << " "
                 << customer.second.endTime << " " << customer.second.parkingType << " "
                 << customer.second.vehicleType << " " << customer.second.entrance << " "
-                << customer.second.exit << " " << customer.second.payment << "\n";
+                << customer.second.exit << " " << customer.second.payment << "\n";// Write customer details
         }
         outFile.close();
     }
@@ -1253,14 +1308,14 @@ void saveData() {
         cerr << "Error: Unable to open customers.dat for writing\n";
     }
 
-    outFile.open("parkingTypeToVehicleTypes.dat");
+    outFile.open("parkingTypeToVehicleTypes.dat");    // Save parking type to vehicle types mapping to parkingTypeToVehicleTypes.dat
     if (outFile.is_open()) {
         for (const auto& type : parkingTypeToVehicleTypes) {
             outFile << type.first;
             for (const auto& vehicle : type.second) {
                 outFile << " " << vehicle;
             }
-            outFile << "\n";
+            outFile << "\n";// Write parking type and associated vehicle types
         }
         outFile.close();
     }
@@ -1268,7 +1323,7 @@ void saveData() {
         cerr << "Error: Unable to open parkingTypeToVehicleTypes.dat for writing\n";
     }
 
-    outFile.open("hourlyRates.dat");
+    outFile.open("hourlyRates.dat");  // Save hourly parking rates to hourlyRates.dat
     if (outFile.is_open()) {
         for (const auto& type : hourlyRates) {
             outFile << type.first << " " << type.second.at("Default") << "\n"; // Save the rate associated with the parking type
@@ -1279,7 +1334,7 @@ void saveData() {
         cerr << "Error: Unable to open hourlyRates.dat for writing\n";
     }
 
-    outFile.open("dailyMaxRate.dat");
+    outFile.open("dailyMaxRate.dat"); // Save daily maximum rate to dailyMaxRate.dat
     if (outFile.is_open()) {
         outFile << dailyMaxRate << "\n";
         outFile.close();
@@ -1390,10 +1445,10 @@ void clearScreen() {
 }
 
 string generateParkingSpotId(const string& floor, int index) {
-    return floor + "_" + to_string(index + 1);
+    return floor + "_" + to_string(index + 1);//generate spots ID in a fixed format
 }
 
-void displayVisualParkingStatus(const string& floor) {
+void displayVisualParkingStatus(const string& floor) {// Function to display visual parking status
     cout << "Floor: " << floor << "\n";
     const auto& spots = parkingLots[floor];
     const int columnWidth = 20;
@@ -1402,7 +1457,9 @@ void displayVisualParkingStatus(const string& floor) {
         if (i % 5 == 0 && i != 0) cout << "\n";
         const auto& spot = spots[i];
         string spotStatus = spot.isOccupied ? "[X]" : "[ ]";
-        cout << left << setw(columnWidth) << (spotStatus + spot.id + "(" + spot.type + ")");
+        cout << left << setw(columnWidth) << (spotStatus + spot.id + "(" + spot.type + ")");// Display spot status, ID, and type.
     }
     cout << "\n";
 }
+
+
