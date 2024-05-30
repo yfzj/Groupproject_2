@@ -736,16 +736,23 @@ void clearParkingSpotOccupation() {
 
 void viewCustomerInformation() {
     clearScreen();
+    loadData(); // Load the latest data from file
     cout << "Customer Information:\n";
     time_t currentTime = time(nullptr); // Get current time
 
     for (const auto& customer : customers) {
         cout << "Plate Number: " << customer.first << "\n";
-        cout << "Vehicle Type: " << customer.second.vehicleType << "\n";
+        cout << "Vehicle Type: " << (customer.second.vehicleType.empty() ? "Not specified" : customer.second.vehicleType) << "\n"; // Added check for empty vehicle type
         cout << "Entrance: " << customer.second.entrance << "\n";
 
         if (customer.second.vehicleType.empty() && customer.second.entrance == 0) {
             cout << "Status: Not rented a parking spot yet\n";
+        }
+        else if (customer.second.startTime == 0) {
+            cout << "Start Time: Not yet parked\n";
+            cout << "Current parking duration: Not yet parked\n";
+            cout << "Current estimated payment due: Not yet parked\n";
+            cout << "End Time: Not yet parked\n";
         }
         else if (customer.second.endTime == 0) {
             double totalHours = ceil(difftime(currentTime, customer.second.startTime) / 3600.0); // Calculate total parking duration (round up to the nearest hour)
@@ -768,6 +775,13 @@ void viewCustomerInformation() {
                 payment = dailyMaxRate;
             }
 
+            // Convert start time to string using localtime_s
+            struct tm timeinfo;
+            char startTimeStr[20];
+            localtime_s(&timeinfo, &customer.second.startTime);
+            strftime(startTimeStr, sizeof(startTimeStr), "%Y-%m-%d %H:%M:%S", &timeinfo);
+
+            cout << "Start Time: " << startTimeStr << "\n";
             cout << "Current parking duration: " << totalHours << " hours\n";
             cout << "Current estimated payment due: $" << fixed << setprecision(2) << payment << "\n";
             cout << "End Time: Not yet departed\n"; // Show not yet departed
@@ -783,9 +797,9 @@ void viewCustomerInformation() {
     cin.get();
 }
 
-
 void addCustomerInformation() {
     clearScreen();
+    loadData(); // Load the latest data from file
     Customer newCustomer;
     cout << "Enter plate number: ";
     cin >> newCustomer.plateNumber;
@@ -799,34 +813,69 @@ void addCustomerInformation() {
         return;
     }
 
-    cout << "Enter vehicle type: ";
-    cin >> newCustomer.vehicleType;
-    while (cin.fail() || newCustomer.vehicleType.empty()) {
-        cin.clear();
+    // Display available vehicle types from file, grouped by parking type
+    cout << "Available vehicle types by parking type:\n";
+    for (const auto& type : parkingTypeToVehicleTypes) {
+        cout << type.first << ": ";
+        for (const auto& vehicle : type.second) {
+            cout << vehicle << " ";
+        }
+        cout << "\n";
+    }
+
+    // Get user input for vehicle type
+    string vehicleType;
+    cout << "Enter your vehicle type: ";
+    cin >> vehicleType;
+
+    // Validate vehicle type and determine parking type
+    bool validVehicleType = false;
+    string parkingType;
+    for (const auto& type : parkingTypeToVehicleTypes) {
+        if (type.second.find(vehicleType) != type.second.end()) {
+            validVehicleType = true;
+            parkingType = type.first;
+            break;
+        }
+    }
+
+    if (!validVehicleType) {
+        cout << "Invalid vehicle type. Please try again.\n";
+        cout << "Press Enter to continue...";
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        cout << "Invalid input. Please enter a valid vehicle type: ";
-        cin >> newCustomer.vehicleType;
+        cin.get();
+        return;
     }
 
     // Set default values for other fields
     newCustomer.startTime = 0;
     newCustomer.endTime = 0;
-    newCustomer.parkingType = "";
+    newCustomer.parkingType = parkingType; // Set parking type based on vehicle type
     newCustomer.entrance = 0;
     newCustomer.exit = 0;
     newCustomer.payment = 0.0;
+    newCustomer.vehicleType = vehicleType; // Set vehicle type from user input
 
     customers[newCustomer.plateNumber] = newCustomer;
-    saveData();
+    saveData(); // Save the updated data to file
     cout << "Customer information added successfully\n";
     cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
 
-
 void deleteCustomerInformation() {
     clearScreen();
+    loadData(); // Load the latest data from file
+
+    // Display all customer information before asking for the plate number
+    cout << "All Customers Information:\n";
+    for (const auto& customer : customers) {
+        cout << "Plate Number: " << customer.first << "\n";
+        cout << "Vehicle Type: " << (customer.second.vehicleType.empty() ? "Not specified" : customer.second.vehicleType) << "\n";
+        cout << "--------------------------\n";
+    }
+
     string plateNumber;
     cout << "Enter plate number to delete: ";
     cin >> plateNumber;
@@ -836,7 +885,7 @@ void deleteCustomerInformation() {
         // Display customer information before deletion
         cout << "Customer Information:\n";
         cout << "Plate Number: " << it->second.plateNumber << "\n";
-        cout << "Vehicle Type: " << it->second.vehicleType << "\n";
+        cout << "Vehicle Type: " << (it->second.vehicleType.empty() ? "Not specified" : it->second.vehicleType) << "\n"; // Added check for empty vehicle type
         cout << "--------------------------\n";
 
         char confirm;
@@ -847,7 +896,7 @@ void deleteCustomerInformation() {
             cin >> confirm;
         }
         if (confirm == 'y' || confirm == 'Y') {
-            // Clear parking spot occupation
+            // Clear parking spot occupation if exists
             for (auto& floor : parkingLots) {
                 for (auto& spot : floor.second) {
                     if (spot.plateNumber == plateNumber) {
@@ -856,13 +905,12 @@ void deleteCustomerInformation() {
                         spot.plateNumber = "";
                         spot.startTime = 0;
                         spot.entrance = 0;
-                        break;
                     }
                 }
             }
 
             customers.erase(it);
-            saveData();
+            saveData(); // Save the updated data to file
             cout << "Customer information deleted successfully\n";
         }
         else {
@@ -877,7 +925,6 @@ void deleteCustomerInformation() {
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
-
 
 void manageCustomerInformation() {
     int choice;
@@ -953,7 +1000,6 @@ void searchAvailableSpots() {
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
-
 
 void rentParkingSpot() {
     while (true) {
@@ -1052,7 +1098,6 @@ void rentParkingSpot() {
         break;
     }
 }
-
 
 void settleParkingFee() {
     clearScreen();
@@ -1244,7 +1289,6 @@ void saveData() {
     }
 }
 
-
 void loadData() {
     ifstream inFile;
 
@@ -1281,12 +1325,12 @@ void loadData() {
     // Load customers
     inFile.open("customers.dat");
     if (inFile.is_open()) {
-        string plateNumber, parkingType, vehicleType;
-        time_t startTime, endTime;
-        int entrance, exit;
-        double payment;
-        while (inFile >> plateNumber >> startTime >> endTime >> parkingType >> vehicleType >> entrance >> exit >> payment) {
-            Customer customer = { plateNumber, startTime, endTime, parkingType, vehicleType, entrance, exit, payment };
+        string plateNumber;
+        while (inFile >> plateNumber) {
+            Customer customer;
+            customer.plateNumber = plateNumber;
+            inFile >> customer.startTime >> customer.endTime >> customer.parkingType
+                >> customer.vehicleType >> customer.entrance >> customer.exit >> customer.payment;
             customers[plateNumber] = customer;
         }
         inFile.close();
@@ -1340,7 +1384,6 @@ void loadData() {
         dailyMaxRate = 50.0; // Default daily maximum rate if file doesn't exist
     }
 }
-
 
 void clearScreen() {
     system("cls");
