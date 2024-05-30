@@ -9,8 +9,9 @@
 #include <algorithm>
 #include <iomanip>
 #include <limits>
-#include <thread>   
-#include <chrono>  
+#include <thread>
+#include <chrono>
+#include <cctype> // To use isdigit function
 
 using namespace std;
 
@@ -81,6 +82,12 @@ int main() {
         cout << "0. Exit\n";
         cout << "Please choose: ";
         cin >> choice;
+        while (cin.fail() || (choice < 0 || choice > 2)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter a number between 0 and 2: ";
+            cin >> choice;
+        }
         switch (choice) {
         case 1: adminLogin(); break;
         case 2: customerLogin(); break;
@@ -121,6 +128,12 @@ void adminLogin() {
             cout << "0. Exit\n";
             cout << "Please choose: ";
             cin >> choice;
+            while (cin.fail() || (choice < 0 || choice > 10)) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input. Please enter a number between 0 and 10: ";
+                cin >> choice;
+            }
             switch (choice) {
             case 1: displayParkingStatus(); break;
             case 2: addParkingSpot(); break;
@@ -145,7 +158,6 @@ void adminLogin() {
     }
 }
 
-
 void customerLogin() {
     cout << "Please enter your plate number: ";
     cin >> currentPlateNumber;
@@ -166,6 +178,12 @@ void customerLogin() {
         cout << "0. Exit\n";
         cout << "Please choose: ";
         cin >> choice;
+        while (cin.fail() || (choice < 0 || choice > 3)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter a number between 0 and 3: ";
+            cin >> choice;
+        }
         switch (choice) {
         case 1: searchAvailableSpots(); break;
         case 2: rentParkingSpot(); break;
@@ -189,10 +207,17 @@ void addParkingSpot() {
     int count;
     cout << "Enter floor (e.g., B1, B2): ";
     cin >> floor;
+    cin.ignore();
     cout << "Enter number of spots to add: ";
     cin >> count;
+    while (cin.fail() || count <= 0) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid input. Please enter a positive number: ";
+        cin >> count;
+    }
 
-    // 显示当前的停车位类型供用户选择
+    // Display current parking types for user to choose from
     cout << "Available parking types: ";
     for (const auto& type : parkingTypeToVehicleTypes) {
         cout << type.first << " ";
@@ -272,6 +297,12 @@ void modifyParkingSpot() {
         cout << "2. Modify a range of spots\n";
         int choice;
         cin >> choice;
+        while (cin.fail() || (choice < 1 || choice > 2)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter 1 or 2: ";
+            cin >> choice;
+        }
 
         vector<string> idsToModify;
 
@@ -302,10 +333,6 @@ void modifyParkingSpot() {
             for (int i = startIdx; i <= endIdx; ++i) {
                 idsToModify.push_back(floor + "_" + to_string(i));
             }
-        }
-        else {
-            cout << "Invalid choice\n";
-            return;
         }
 
         // Show available parking types
@@ -386,6 +413,12 @@ void deleteParkingSpot() {
         cout << "2. Delete a range of spots\n";
         int choice;
         cin >> choice;
+        while (cin.fail() || (choice < 1 || choice > 2)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter 1 or 2: ";
+            cin >> choice;
+        }
 
         vector<string> idsToDelete;
 
@@ -416,10 +449,6 @@ void deleteParkingSpot() {
             for (int i = startIdx; i <= endIdx; ++i) {
                 idsToDelete.push_back(floor + "_" + to_string(i));
             }
-        }
-        else {
-            cout << "Invalid choice\n";
-            return;
         }
 
         // Delete the specified spots
@@ -472,6 +501,12 @@ void setHourlyRate() {
 
         cout << "Enter new hourly rate: ";
         cin >> rate;
+        while (cin.fail() || rate < 0) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter a positive rate: ";
+            cin >> rate;
+        }
 
         hourlyRates[parkingType]["Default"] = rate;  // Use a default key since vehicle type is no longer relevant
         saveData();
@@ -492,6 +527,12 @@ void setDailyMaxRate() {
 
     cout << "Enter new daily maximum rate: ";
     cin >> dailyMaxRate;
+    while (cin.fail() || dailyMaxRate < 0) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid input. Please enter a positive rate: ";
+        cin >> dailyMaxRate;
+    }
     saveData();
     cout << "Daily maximum rate set successfully\n";
 
@@ -528,6 +569,11 @@ void modifyParkingTypeVehicleTypes() {
     cout << "Add or remove (a/r): ";
     cin >> choice;
 
+    while (choice != 'a' && choice != 'r') {
+        cout << "Invalid choice. Please enter 'a' to add or 'r' to remove: ";
+        cin >> choice;
+    }
+
     if (choice == 'a') {
         parkingTypeToVehicleTypes[parkingType].insert(vehicleType);
         cout << "Vehicle type added to parking type\n";
@@ -536,9 +582,7 @@ void modifyParkingTypeVehicleTypes() {
         parkingTypeToVehicleTypes[parkingType].erase(vehicleType);
         cout << "Vehicle type removed from parking type\n";
     }
-    else {
-        cout << "Invalid choice\n";
-    }
+
     saveData();
     cout << "Press any key to continue...";
     cin.ignore();
@@ -583,6 +627,12 @@ void clearParkingSpotOccupation() {
         cout << "2. Clear a range of spots\n";
         int choice;
         cin >> choice;
+        while (cin.fail() || (choice < 1 || choice > 2)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter 1 or 2: ";
+            cin >> choice;
+        }
 
         vector<string> idsToClear;
 
@@ -613,10 +663,6 @@ void clearParkingSpotOccupation() {
             for (int i = startIdx; i <= endIdx; ++i) {
                 idsToClear.push_back(floor + "_" + to_string(i));
             }
-        }
-        else {
-            cout << "Invalid choice\n";
-            return;
         }
 
         // Clear the specified spots and update customer information
@@ -660,8 +706,6 @@ void clearParkingSpotOccupation() {
     cin.ignore();
     cin.get();
 }
-
-
 
 void viewCustomerInformation() {
     clearScreen();
@@ -763,6 +807,10 @@ void deleteCustomerInformation() {
         char confirm;
         cout << "Are you sure you want to delete this customer? (y/n): ";
         cin >> confirm;
+        while (confirm != 'y' && confirm != 'Y' && confirm != 'n' && confirm != 'N') {
+            cout << "Invalid input. Please enter 'y' or 'n': ";
+            cin >> confirm;
+        }
         if (confirm == 'y' || confirm == 'Y') {
             // Clear parking spot occupation
             for (auto& floor : parkingLots) {
@@ -806,6 +854,12 @@ void manageCustomerInformation() {
         cout << "0. Exit\n";
         cout << "Please choose: ";
         cin >> choice;
+        while (cin.fail() || (choice < 0 || choice > 3)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter a number between 0 and 3: ";
+            cin >> choice;
+        }
 
         switch (choice) {
         case 1:
@@ -824,8 +878,6 @@ void manageCustomerInformation() {
         }
     } while (choice != 0);
 }
-
-
 
 void searchAvailableSpots() {
     clearScreen();
@@ -909,6 +961,12 @@ void rentParkingSpot() {
         cin >> spotId;
         cout << "Enter entrance you enter in (1 or 2): ";
         cin >> entrance;
+        while (cin.fail() || (entrance < 1 || entrance > 2)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter 1 or 2: ";
+            cin >> entrance;
+        }
         cout << "Enter your vehicle type: ";
         cin >> vehicleType;
 
@@ -1004,6 +1062,10 @@ void settleParkingFee() {
     char choice;
     cout << "Do you want to proceed with the payment? (y/n): ";
     cin >> choice;
+    while (choice != 'y' && choice != 'Y' && choice != 'n' && choice != 'N') {
+        cout << "Invalid input. Please enter 'y' or 'n': ";
+        cin >> choice;
+    }
     if (choice != 'y' && choice != 'Y') {
         cout << "Payment cancelled. Press any key to continue...";
         cin.ignore();
@@ -1032,6 +1094,12 @@ void settleParkingFee() {
     while (true) {
         cout << "Enter exit number you will leave from (1 or 2): ";
         cin >> exit;
+        while (cin.fail() || (exit < 1 || exit > 2)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter 1 or 2: ";
+            cin >> exit;
+        }
 
         if (exit == 1 || exit == 2) {
             customer.exit = exit;
@@ -1061,7 +1129,6 @@ void settleParkingFee() {
     cin.ignore();
     cin.get();
 }
-
 
 void saveData() {
     ofstream outFile("adminPassword.dat");
@@ -1217,7 +1284,6 @@ void loadData() {
         dailyMaxRate = 50.0; // Default daily maximum rate if file doesn't exist
     }
 }
-
 
 void clearScreen() {
     system("cls");
