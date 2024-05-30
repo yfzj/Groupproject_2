@@ -102,6 +102,12 @@ void initializeSystem() {
     if (adminPassword.empty()) {
         cout << "Please set the admin password: ";
         cin >> adminPassword;
+        while (cin.fail() || adminPassword.empty()) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter a non-empty password: ";
+            cin >> adminPassword;
+        }
         saveData();
     }
 }
@@ -153,7 +159,7 @@ void adminLogin() {
     else {
         cout << "Incorrect password\n";
         cout << "Press any key to continue...";
-        cin.ignore();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cin.get();
     }
 }
@@ -188,6 +194,8 @@ void customerLogin() {
         case 1: searchAvailableSpots(); break;
         case 2: rentParkingSpot(); break;
         case 3: settleParkingFee(); break;
+        case 0: break;
+        default: cout << "Invalid choice\n";
         }
     } while (choice != 0);
 }
@@ -198,9 +206,10 @@ void displayParkingStatus() {
         displayVisualParkingStatus(floor.first);
     }
     cout << "Press any key to continue...";
-    cin.ignore();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
+
 
 void addParkingSpot() {
     string floor;
@@ -226,9 +235,9 @@ void addParkingSpot() {
 
     ParkingSpot newSpot;
     cin >> newSpot.type;
-    if (parkingTypeToVehicleTypes.find(newSpot.type) == parkingTypeToVehicleTypes.end()) {
-        cout << "Invalid parking type\n";
-        return;
+    while (parkingTypeToVehicleTypes.find(newSpot.type) == parkingTypeToVehicleTypes.end()) {
+        cout << "Invalid parking type. Please enter a valid parking type: ";
+        cin >> newSpot.type;
     }
     newSpot.isOccupied = false;
 
@@ -255,7 +264,7 @@ void addParkingSpot() {
     saveData();
     cout << "Parking spots added successfully\n";
     cout << "Press any key to continue...";
-    cin.ignore();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
 
@@ -343,9 +352,9 @@ void modifyParkingSpot() {
         cout << "\nEnter new spot type: ";
         cin >> newType;
 
-        if (parkingTypeToVehicleTypes.find(newType) == parkingTypeToVehicleTypes.end()) {
-            cout << "Invalid parking type\n";
-            return;
+        while (parkingTypeToVehicleTypes.find(newType) == parkingTypeToVehicleTypes.end()) {
+            cout << "Invalid parking type. Please enter a valid parking type: ";
+            cin >> newType;
         }
 
         // Modify the specified spots
@@ -371,7 +380,7 @@ void modifyParkingSpot() {
     }
 
     cout << "Press any key to continue...";
-    cin.ignore();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
 
@@ -443,6 +452,13 @@ void deleteParkingSpot() {
             cout << "Enter the end ID of the range to delete (e.g., B1_10): ";
             cin >> endId;
 
+            while (cin.fail()) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input. Please enter valid spot IDs: ";
+                cin >> startId >> endId;
+            }
+
             int startIdx = stoi(startId.substr(startId.find('_') + 1));
             int endIdx = stoi(endId.substr(endId.find('_') + 1));
 
@@ -474,9 +490,10 @@ void deleteParkingSpot() {
     }
 
     cout << "Press any key to continue...";
-    cin.ignore();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
+
 
 void setHourlyRate() {
     string parkingType;
@@ -517,9 +534,10 @@ void setHourlyRate() {
     }
 
     cout << "Press any key to continue...";
-    cin.ignore();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
+
 
 void setDailyMaxRate() {
     // Display current daily maximum rate
@@ -537,9 +555,10 @@ void setDailyMaxRate() {
     cout << "Daily maximum rate set successfully\n";
 
     cout << "Press any key to continue...";
-    cin.ignore();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
+
 
 void modifyParkingTypeVehicleTypes() {
     clearScreen();
@@ -585,9 +604,10 @@ void modifyParkingTypeVehicleTypes() {
 
     saveData();
     cout << "Press any key to continue...";
-    cin.ignore();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
+
 
 void clearParkingSpotOccupation() {
     string floor, spotId;
@@ -657,6 +677,13 @@ void clearParkingSpotOccupation() {
             cout << "Enter the end ID of the range to clear (e.g., B1_10): ";
             cin >> endId;
 
+            while (cin.fail()) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input. Please enter valid spot IDs: ";
+                cin >> startId >> endId;
+            }
+
             int startIdx = stoi(startId.substr(startId.find('_') + 1));
             int endIdx = stoi(endId.substr(endId.find('_') + 1));
 
@@ -703,7 +730,7 @@ void clearParkingSpotOccupation() {
     }
 
     cout << "Press any key to continue...";
-    cin.ignore();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
 
@@ -752,9 +779,10 @@ void viewCustomerInformation() {
         cout << "--------------------------\n";
     }
     cout << "Press any key to continue...";
-    cin.ignore();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
+
 
 void addCustomerInformation() {
     clearScreen();
@@ -766,13 +794,19 @@ void addCustomerInformation() {
     if (customers.find(newCustomer.plateNumber) != customers.end()) {
         cout << "Customer with this plate number already exists.\n";
         cout << "Press any key to continue...";
-        cin.ignore();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cin.get();
         return;
     }
 
     cout << "Enter vehicle type: ";
     cin >> newCustomer.vehicleType;
+    while (cin.fail() || newCustomer.vehicleType.empty()) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid input. Please enter a valid vehicle type: ";
+        cin >> newCustomer.vehicleType;
+    }
 
     // Set default values for other fields
     newCustomer.startTime = 0;
@@ -786,9 +820,10 @@ void addCustomerInformation() {
     saveData();
     cout << "Customer information added successfully\n";
     cout << "Press any key to continue...";
-    cin.ignore();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
+
 
 void deleteCustomerInformation() {
     clearScreen();
@@ -839,9 +874,10 @@ void deleteCustomerInformation() {
     }
 
     cout << "Press any key to continue...";
-    cin.ignore();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
+
 
 void manageCustomerInformation() {
     int choice;
@@ -879,6 +915,7 @@ void manageCustomerInformation() {
     } while (choice != 0);
 }
 
+
 void searchAvailableSpots() {
     clearScreen();
 
@@ -898,12 +935,9 @@ void searchAvailableSpots() {
     string vehicleType;
     cin >> vehicleType;
 
-    if (availableVehicleTypes.find(vehicleType) == availableVehicleTypes.end()) {
-        cout << "Invalid vehicle type\n";
-        cout << "Press any key to continue...";
-        cin.ignore();
-        cin.get();
-        return;
+    while (availableVehicleTypes.find(vehicleType) == availableVehicleTypes.end()) {
+        cout << "Invalid vehicle type. Please enter a valid vehicle type: ";
+        cin >> vehicleType;
     }
 
     for (const auto& floor : parkingLots) {
@@ -916,9 +950,10 @@ void searchAvailableSpots() {
     }
 
     cout << "Press any key to continue...";
-    cin.ignore();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
+
 
 void rentParkingSpot() {
     while (true) {
@@ -1012,11 +1047,12 @@ void rentParkingSpot() {
         cout << "Parking spot rented successfully\n";
 
         cout << "Press any key to return to the customer menu...";
-        cin.ignore();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cin.get();
         break;
     }
 }
+
 
 void settleParkingFee() {
     clearScreen();
@@ -1026,7 +1062,7 @@ void settleParkingFee() {
 
     if (customers.find(currentPlateNumber) == customers.end()) {
         cout << "No such customer. Press any key to continue...";
-        cin.ignore();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cin.get();
         return;
     }
@@ -1057,7 +1093,7 @@ void settleParkingFee() {
     }
 
     cout << "Total hours parked: " << totalHours << "\n";
-    cout << "Total payment due: $" << customer.payment << "\n";
+    cout << "Total payment due: $" << fixed << setprecision(2) << customer.payment << "\n";
 
     char choice;
     cout << "Do you want to proceed with the payment? (y/n): ";
@@ -1068,7 +1104,7 @@ void settleParkingFee() {
     }
     if (choice != 'y' && choice != 'Y') {
         cout << "Payment cancelled. Press any key to continue...";
-        cin.ignore();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cin.get();
         return;
     }
@@ -1126,19 +1162,23 @@ void settleParkingFee() {
     saveData();
     cout << "Payment settled and receipt printed\n";
     cout << "Press any key to continue...";
-    cin.ignore();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
 
+
 void saveData() {
     ofstream outFile("adminPassword.dat");
-    if (outFile) {
+    if (outFile.is_open()) {
         outFile << adminPassword;
         outFile.close();
     }
+    else {
+        cerr << "Error: Unable to open adminPassword.dat for writing\n";
+    }
 
     outFile.open("parkingLots.dat");
-    if (outFile) {
+    if (outFile.is_open()) {
         for (const auto& floor : parkingLots) {
             outFile << floor.first << "\n";
             for (const auto& spot : floor.second) {
@@ -1150,9 +1190,12 @@ void saveData() {
         }
         outFile.close();
     }
+    else {
+        cerr << "Error: Unable to open parkingLots.dat for writing\n";
+    }
 
     outFile.open("customers.dat");
-    if (outFile) {
+    if (outFile.is_open()) {
         for (const auto& customer : customers) {
             outFile << customer.first << " " << customer.second.startTime << " "
                 << customer.second.endTime << " " << customer.second.parkingType << " "
@@ -1161,9 +1204,12 @@ void saveData() {
         }
         outFile.close();
     }
+    else {
+        cerr << "Error: Unable to open customers.dat for writing\n";
+    }
 
     outFile.open("parkingTypeToVehicleTypes.dat");
-    if (outFile) {
+    if (outFile.is_open()) {
         for (const auto& type : parkingTypeToVehicleTypes) {
             outFile << type.first;
             for (const auto& vehicle : type.second) {
@@ -1173,28 +1219,38 @@ void saveData() {
         }
         outFile.close();
     }
+    else {
+        cerr << "Error: Unable to open parkingTypeToVehicleTypes.dat for writing\n";
+    }
 
     outFile.open("hourlyRates.dat");
-    if (outFile) {
+    if (outFile.is_open()) {
         for (const auto& type : hourlyRates) {
             outFile << type.first << " " << type.second.at("Default") << "\n"; // Save the rate associated with the parking type
         }
         outFile.close();
     }
+    else {
+        cerr << "Error: Unable to open hourlyRates.dat for writing\n";
+    }
 
     outFile.open("dailyMaxRate.dat");
-    if (outFile) {
+    if (outFile.is_open()) {
         outFile << dailyMaxRate << "\n";
         outFile.close();
     }
+    else {
+        cerr << "Error: Unable to open dailyMaxRate.dat for writing\n";
+    }
 }
+
 
 void loadData() {
     ifstream inFile;
 
     // Load admin password
     inFile.open("adminPassword.dat");
-    if (inFile) {
+    if (inFile.is_open()) {
         inFile >> adminPassword;
         inFile.close();
     }
@@ -1204,7 +1260,7 @@ void loadData() {
 
     // Load parking lots
     inFile.open("parkingLots.dat");
-    if (inFile) {
+    if (inFile.is_open()) {
         string floor;
         while (getline(inFile, floor)) {
             vector<ParkingSpot> spots;
@@ -1224,7 +1280,7 @@ void loadData() {
 
     // Load customers
     inFile.open("customers.dat");
-    if (inFile) {
+    if (inFile.is_open()) {
         string plateNumber, parkingType, vehicleType;
         time_t startTime, endTime;
         int entrance, exit;
@@ -1238,7 +1294,7 @@ void loadData() {
 
     // Load parkingTypeToVehicleTypes
     inFile.open("parkingTypeToVehicleTypes.dat");
-    if (inFile) {
+    if (inFile.is_open()) {
         string parkingType, vehicleType;
         while (inFile >> parkingType) {
             set<string> vehicleTypes;
@@ -1259,7 +1315,7 @@ void loadData() {
 
     // Load hourly rates
     inFile.open("hourlyRates.dat");
-    if (inFile) {
+    if (inFile.is_open()) {
         string parkingType;
         double rate;
         while (inFile >> parkingType >> rate) {
@@ -1276,7 +1332,7 @@ void loadData() {
 
     // Load daily maximum rate
     inFile.open("dailyMaxRate.dat");
-    if (inFile) {
+    if (inFile.is_open()) {
         inFile >> dailyMaxRate;
         inFile.close();
     }
@@ -1284,6 +1340,7 @@ void loadData() {
         dailyMaxRate = 50.0; // Default daily maximum rate if file doesn't exist
     }
 }
+
 
 void clearScreen() {
     system("cls");
