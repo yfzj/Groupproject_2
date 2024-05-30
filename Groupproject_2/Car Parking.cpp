@@ -158,7 +158,7 @@ void adminLogin() {
     }
     else {
         cout << "Incorrect password\n";
-        cout << "Press any key to continue...";
+        cout << "Press Enter to continue...";
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cin.get();
     }
@@ -205,7 +205,7 @@ void displayParkingStatus() {
     for (const auto& floor : parkingLots) {
         displayVisualParkingStatus(floor.first);
     }
-    cout << "Press any key to continue...";
+    cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
@@ -263,7 +263,7 @@ void addParkingSpot() {
     }
     saveData();
     cout << "Parking spots added successfully\n";
-    cout << "Press any key to continue...";
+    cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
@@ -379,7 +379,7 @@ void modifyParkingSpot() {
         cout << "Invalid floor\n";
     }
 
-    cout << "Press any key to continue...";
+    cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
@@ -489,7 +489,7 @@ void deleteParkingSpot() {
         cout << "Invalid floor\n";
     }
 
-    cout << "Press any key to continue...";
+    cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
@@ -533,7 +533,7 @@ void setHourlyRate() {
         cout << "Invalid parking type\n";
     }
 
-    cout << "Press any key to continue...";
+    cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
@@ -554,7 +554,7 @@ void setDailyMaxRate() {
     saveData();
     cout << "Daily maximum rate set successfully\n";
 
-    cout << "Press any key to continue...";
+    cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
@@ -603,7 +603,7 @@ void modifyParkingTypeVehicleTypes() {
     }
 
     saveData();
-    cout << "Press any key to continue...";
+    cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
@@ -729,7 +729,7 @@ void clearParkingSpotOccupation() {
         cout << "Invalid floor\n";
     }
 
-    cout << "Press any key to continue...";
+    cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
@@ -778,7 +778,7 @@ void viewCustomerInformation() {
 
         cout << "--------------------------\n";
     }
-    cout << "Press any key to continue...";
+    cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
@@ -793,7 +793,7 @@ void addCustomerInformation() {
     // Check for duplicate plate number
     if (customers.find(newCustomer.plateNumber) != customers.end()) {
         cout << "Customer with this plate number already exists.\n";
-        cout << "Press any key to continue...";
+        cout << "Press Enter to continue...";
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cin.get();
         return;
@@ -819,7 +819,7 @@ void addCustomerInformation() {
     customers[newCustomer.plateNumber] = newCustomer;
     saveData();
     cout << "Customer information added successfully\n";
-    cout << "Press any key to continue...";
+    cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
@@ -873,7 +873,7 @@ void deleteCustomerInformation() {
         cout << "Customer not found\n";
     }
 
-    cout << "Press any key to continue...";
+    cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
@@ -949,7 +949,7 @@ void searchAvailableSpots() {
         }
     }
 
-    cout << "Press any key to continue...";
+    cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
@@ -1061,7 +1061,7 @@ void settleParkingFee() {
     loadData();
 
     if (customers.find(currentPlateNumber) == customers.end()) {
-        cout << "No such customer. Press any key to continue...";
+        cout << "No such customer. Press Enter to continue...";
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cin.get();
         return;
@@ -1103,7 +1103,7 @@ void settleParkingFee() {
         cin >> choice;
     }
     if (choice != 'y' && choice != 'Y') {
-        cout << "Payment cancelled. Press any key to continue...";
+        cout << "Payment cancelled. Press Enter to continue...";
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cin.get();
         return;
@@ -1161,7 +1161,7 @@ void settleParkingFee() {
     customers.erase(currentPlateNumber);
     saveData();
     cout << "Payment settled and receipt printed\n";
-    cout << "Press any key to continue...";
+    cout << "Press Enter to continue...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
